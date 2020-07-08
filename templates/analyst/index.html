@@ -1,0 +1,132 @@
+{% extends "index-base.html" %}
+{% load static %}
+
+{% block navbar %}
+    <a class="navbar-brand" href="index.html"> <img src={% static "img/logo.png" %} alt="logo"> </a>
+    <button class="navbar-toggler" type="button" data-toggle="collapse"
+            data-target="#navbarSupportedContent" aria-controls="navbarSupportedContent"
+            aria-expanded="false" aria-label="Toggle navigation">
+        <span class="navbar-toggler-icon"></span>
+    </button>
+
+    <div class="collapse navbar-collapse main-menu-item justify-content-end"
+         id="navbarSupportedContent">
+        <ul class="navbar-nav">
+            <li class="nav-item active">
+                <a class="nav-link" href="index.html">Home</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="dcf-calculator.html">DCF</a>
+            </li>
+        </ul>
+    </div>
+{% endblock %}
+<!-- Header part end-->
+
+<!-- banner part start-->
+{% block main %}
+    <h1>Lead from <br> Front in Business <br> Innovation.</h1>
+    <p>Male bring land dominion over can yielding his moveth under of depend brought him is.
+        Multiply which firmament deep make.</p>
+    <a href="#" class="btn_1">learn more </a>
+    <a href="https://www.youtube.com/watch?v=pBFQdxA-apI" class="popup-youtube video_popup">
+        <span><img src={% static "img/icon/play.svg" %} alt=""></span> Intro Video</a>
+{% endblock %}
+<!-- banner part start-->
+
+<!-- about part start-->
+{% block about %}
+    <div class="row align-items-center justify-content-end">
+        <div class="col-md-6 col-lg-6 col-xl-5">
+            <div class="about_img">
+                <img src={% static "img/about_img_1.png" %} alt="">
+            </div>
+        </div>
+        <div class="col-md-6 col-lg-6 offset-xl-1 col-xl-6">
+            <div class="about_text">
+                <h2>We Have 24 Year
+                    Expereince in consulting</h2>
+                <h4>First Abundantly night you are sea great fifth year</h4>
+                <p>Lights fly above bearing brought abundantly whose. Without one may i seed void wels great
+                    face god were deep be first. Unto for third be in moveth. Bring land bearing un abundantly
+                    firmament appear whales them years. Lights fly above bearing brought bold abundantly whose
+                    without one may i seed. </p>
+                <a href="#" class="btn_2">read more</a>
+            </div>
+        </div>
+    </div>
+{% endblock %}
+<!-- about part start-->
+
+<!-- service part start-->
+{% block services %}
+    <div class="col-sm-12 col-lg-8 col-xl-4">
+        <div class="single_service_text">
+            <h2>We Provide Best Services</h2>
+            <p>Male bring land dominion over can't yielding. His order moveth under of dry brought him is.
+                Multiply which firmament deep make. Male bring land. Dominion over can't yielding. His
+                moveth under of dry brought him is. Multiply which firmament deep make.</p>
+            <a href="#" class="btn_2">Load More</a>
+        </div>
+    </div>
+    <div class="col-sm-6 col-xl-4">
+        <div class="single_service_part">
+            <span class="single_service_icon"><i class="flaticon-growth"></i></span>
+            <h4>Business Opportunity</h4>
+            <p>Show wherein form yielding whala readeat gathered wherein moved. Behold may be winged created
+                that Won't theya are second god give </p>
+            <a href="#" class="btn_3">Learn More <i class="ti-arrow-right"></i></a>
+        </div>
+    </div>
+    <div class="col-sm-6 col-xl-4">
+        <div class="single_service_part single_service_part_2">
+            <span class="single_service_icon style_icon"><i class="flaticon-wallet"></i></span>
+            <h4>Commercial Approach</h4>
+            <p>Show wherein form yielding whala readeat gathered wherein moved. Behold may be winged created
+                that Won't theya are second god give </p>
+            <a href="#" class="btn_3 service_btn">Learn More <i class="ti-arrow-right"></i></a>
+        </div>
+    </div>
+{% endblock %}
+<!-- service part end-->
+
+<!-- footer part start-->
+{% block footer %}
+    <div class="col-xl-2 col-sm-4 mb-4 mb-xl-0 single-footer-widget">
+        <h4>Top Products</h4>
+        <ul>
+            <li><a href="#">Managed Website</a></li>
+            <li><a href="#">Manage Reputation</a></li>
+            <li><a href="#">Power Tools</a></li>
+            <li><a href="#">Marketing Service</a></li>
+        </ul>
+    </div>
+    <div class="col-xl-2 col-sm-4 mb-4 mb-xl-0 single-footer-widget">
+        <h4>Quick Links</h4>
+        <ul>
+            <li><a href="#">Jobs</a></li>
+            <li><a href="#">Brand Assets</a></li>
+            <li><a href="#">Investor Relations</a></li>
+            <li><a href="#">Terms of Service</a></li>
+        </ul>
+    </div>
+    <div class="col-xl-2 col-sm-4 mb-4 mb-xl-0 single-footer-widget">
+        <h4>Features</h4>
+        <ul>
+            <li><a href="#">Jobs</a></li>
+            <li><a href="#">Brand Assets</a></li>
+            <li><a href="#">Investor Relations</a></li>
+            <li><a href="#">Terms of Service</a></li>
+        </ul>
+    </div>
+    <div class="col-xl-2 col-sm-4 mb-4 mb-xl-0 single-footer-widget">
+        <h4>Resources</h4>
+        <ul>
+            <li><a href="#">Guides</a></li>
+            <li><a href="#">Research</a></li>
+            <li><a href="#">Experts</a></li>
+            <li><a href="#">Agencies</a></li>
+        </ul>
+    </div>
+{% endblock %}
+<!-- footer part end-->
