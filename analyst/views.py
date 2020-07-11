@@ -7,10 +7,6 @@ from django.shortcuts import render
 from django.utils.datetime_safe import datetime
 
 
-def index(request):
-    return render(request, "analyst/index.html")
-
-
 def get_dcf(request):
     exchanges = ["NYSE", "NASAQ", "AMEX", "EURONEX", "TSX"]
     dr = 10
