@@ -24,8 +24,12 @@ def get_dcf(request):
         years = int(request.POST["years"])
         discount_rate = dr / 100
         ufcf = []
+        used_list = []
         for i in range(0, years):
-            ufcf.append(calculate_ufcf(key, eq, i))
+            calc, used = calculate_ufcf(key, eq, i)
+            used_list.append(used)
+            ufcf.append(calc)
+        used_list = reformat_params(used_list)
         exp_ufcf = calculate_exp_ufcf(ufcf)
         eq_val = calculate_dcf(key, eq, exp_ufcf, discount_rate)
         pps = calculate_pps(key, eq, eq_val)
@@ -37,10 +41,29 @@ def get_dcf(request):
                                                                "curr_year": current_year,
                                                                "past_years": past_years,
                                                                "eq_val": eq_val,
+                                                               "used_params": used_list,
                                                                "ufcf": ufcf,
                                                                "discount_rate": dr,
                                                                "pps": pps,
                                                                "all_eq": equities})
+
+
+def reformat_params(used_list):
+    nopats = []
+    amorts = []
+    capexs = []
+    working_capitals = []
+    for period in used_list:
+        nopats.append(period["nopat"])
+        amorts.append(period["deprAndAmort"])
+        capexs.append(period["capex"])
+        working_capitals.append(period["work_capital"])
+    return {
+        "NOPAT": nopats,
+        "Depreciation and Amortization": amorts,
+        "CAPEX": capexs,
+        "Working Capital": working_capitals
+    }
 
 
 def get_all_equities(key):
@@ -81,7 +104,14 @@ def calculate_ufcf(key, ticker, year):
         "accountsPayables"]
     capex = cashflow["capitalExpenditure"]
     ufcf = nopat + income["depreciationAndAmortization"] - capex - working_capital
-    return ufcf
+    used_params = {
+        "year": year,
+        "nopat": nopat,
+        "deprAndAmort": income["depreciationAndAmortization"],
+        "capex": capex * -1,
+        "work_capital": working_capital * -1
+    }
+    return ufcf, used_params
 
 
 def forecast(past_cashflows):

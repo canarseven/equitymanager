@@ -7,6 +7,10 @@
     <link rel="stylesheet" href={% static "css/autocomplete.css" %}>
 {% endblock %}
 
+{% block title %}
+    Analysis
+{% endblock %}
+
 
 {% block navbar %}
     <a class="navbar-brand" href="../index.html"> <img src={% static "img/logo.png" %} alt="logo"> </a>
@@ -59,10 +63,10 @@
                     </div>
                     <button class="button rounded-0 primary-bg text-white w-100 btn_4" type="submit">Search</button>
                 </form>
-                <div class="side">
+                <div class="side logo">
                 </div>
             </div>
-            <div class="excel">
+            <div class="excel scrollable">
                 <table class="table">
                     <tr>
                         <th>{{ eq }} in USD</th>
@@ -70,7 +74,15 @@
                             <th>{{ year }}</th>
                         {% endfor %}
                     </tr>
-                    <tr>
+                    {% for k,v in used_params.items %}
+                        <tr>
+                            <td>{{ k }}</td>
+                            {% for paramvalue in v %}
+                                <td>{{ paramvalue|floatformat:2|intcomma }}</td>
+                            {% endfor %}
+                        </tr>
+                    {% endfor %}
+                    <tr style="font-weight: bold">
                         <td>UFCF</td>
                         {% for cashflow in ufcf %}
                             <td>{{ cashflow|floatformat:2|intcomma }}</td>
@@ -78,7 +90,7 @@
                     </tr>
                 </table>
             </div>
-            <div class="excel">
+            <div class="excel scrollable">
                 <table class="table">
                     <tr>
                         <th>{{ eq }} in USD</th>

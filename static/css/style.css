@@ -29,6 +29,20 @@
     border-radius: 1em;
 }
 
+.scrollable {
+    overflow: auto;
+}
+
+@media (max-width: 480px) {
+    .logo {
+        display: none;
+    }
+
+    .form-input {
+        width: 100%;
+    }
+}
+
 .table {
     width: 100%;
 }
