@@ -25,6 +25,9 @@
     <link rel="stylesheet" href={% static "css/slick.css" %}>
     <!-- style CSS -->
     <link rel="stylesheet" href={% static "css/style.css" %}>
+    {% block css %}
+
+    {% endblock %}
 </head>
 
 <body>
@@ -50,7 +53,7 @@
 {% endblock %}
 <!-- breadcrumb start-->
 <!--================Blog Area =================-->
-<section class="blog_area single-post-area section_padding">
+<section class="blog_area single-post-area">
     <div class="container">
         <div class="row">
             {% block main %}
@@ -110,6 +113,10 @@
 <script src={% static "js/slick.min.js" %}></script>
 <!-- custom js -->
 <script src={% static "js/custom.js" %}></script>
+
+{% block scripts %}
+
+{% endblock %}
 
 
 </body>

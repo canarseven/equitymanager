@@ -1,5 +1,11 @@
 {% extends "service-base.html" %}
 {% load static %}
+{% load humanize %}
+
+{% block css %}
+    <!-- style CSS -->
+    <link rel="stylesheet" href={% static "css/autocomplete.css" %}>
+{% endblock %}
 
 
 {% block navbar %}
@@ -32,45 +38,59 @@
                 <form action="dcf-calculator.html" method="post" class="form-input">
                     {% csrf_token %}
                     <div class="form-group">
-                        <div class="input-group mb-3">
+                        <div class="input-group mb-3" style="width: 100%; margin: 10px;">
                             <label for="equity">Choose an equity:</label>
-                            <select name="equity" style="width: 100%">
-                                {% for v in all_equities %}
-                                    <option value={{ v }}> {{ v }} </option>
-                                {% endfor %}
-                            </select>
+                            <div class="autocomplete" style="width: inherit">
+                                <input type="text" id="equity" name="equity" style="width: inherit">
+                            </div>
                         </div>
-                        <div class="input-group mb-3">
-                            <label for="discount_rate">Set the discount rate (in %):</label>
-                            <input type="text" class="form-control" style="width: 100%" name="discount_rate"
-                                   placeholder={{ discount_rate }}>
+                        <div class="row" style="justify-content: center;">
+                            <div class="input-group mb-3" style="width: 45%; margin: 10px;">
+                                <label for="discount_rate">Discount rate (in %):</label>
+                                <input type="number" class="form-control" style="width: 100%" name="discount_rate"
+                                       placeholder={{ discount_rate }}>
+                            </div>
+                            <div class="input-group mb-3" style="width: 45%; margin: 10px;">
+                                <label for="years">Historic data to use (in years):</label>
+                                <input type="number" class="form-control" style="width: 100%" name="years"
+                                       placeholder={{ years }}>
+                            </div>
                         </div>
                     </div>
                     <button class="button rounded-0 primary-bg text-white w-100 btn_4" type="submit">Search</button>
                 </form>
                 <div class="side">
-                    <img src={% static "img/globe.gif" %} class="animation" alt="embedded SVG"/>
                 </div>
             </div>
             <div class="excel">
                 <table class="table">
                     <tr>
-                        <th>AAPL</th>
-                        <th>2019</th>
-                        <th>2020</th>
-                        <th>2021</th>
+                        <th>{{ eq }} in USD</th>
+                        {% for year in past_years %}
+                            <th>{{ year }}</th>
+                        {% endfor %}
+                    </tr>
+                    <tr>
+                        <td>UFCF</td>
+                        {% for cashflow in ufcf %}
+                            <td>{{ cashflow|floatformat:2|intcomma }}</td>
+                        {% endfor %}
+                    </tr>
+                </table>
+            </div>
+            <div class="excel">
+                <table class="table">
+                    <tr>
+                        <th>{{ eq }} in USD</th>
+                        <th>Today</th>
                     </tr>
                     <tr>
                         <td>Equity Value</td>
-                        <td>{{ eq_val }}</td>
-                        <td>{{ eq_val }}</td>
-                        <td>{{ eq_val }}</td>
+                        <td>{{ eq_val|floatformat:2|intcomma }}</td>
                     </tr>
                     <tr>
-                        <td>Share Price ($)</td>
-                        <td>{{ pps }}</td>
-                        <td>{{ pps }}</td>
-                        <td>{{ pps }}</td>
+                        <td>Share Price</td>
+                        <td>{{ pps|floatformat:2|intcomma }}</td>
                     </tr>
                 </table>
             </div>
@@ -117,67 +137,13 @@
             <li><a href="#">Agencies</a></li>
         </ul>
     </div>
-    <div class="col-xl-4 col-sm-8 col-md-8 mb-4 mb-xl-0 single-footer-widget">
-        <h4>Newsletter</h4>
-        <p>You can trust us. we only send promo offers,</p>
-        <div class="form-wrap" id="mc_embed_signup">
-            <form target="_blank"
-                  action="https://spondonit.us12.list-manage.com/subscribe/post?u=1462626880ade1ac87bd9c93a&amp;id=92a4423d01"
-                  method="get" class="form-inline">
-                <input class="form-control" name="EMAIL" placeholder="Your Email Address"
-                       onfocus="this.placeholder = ''" onblur="this.placeholder = 'Your Email Address '"
-                       required="" type="email">
-                <button class="click-btn btn btn-default text-uppercase btn_2">subscribe</button>
-                <div style="position: absolute; left: -5000px;">
-                    <input name="b_36c4fd991d266f23781ded980_aefe40901a" tabindex="-1" value="" type="text">
-                </div>
-
-                <div class="info"></div>
-            </form>
-        </div>
-    </div>
 {% endblock %}
-<footer class="copyright_part">
-    <div class="container">
-        <div class="row align-items-center">
-            <p class="footer-text m-0 col-lg-8 col-md-12">
-                <!-- Link back to Colorlib can't be removed. Template is licensed under CC BY 3.0. -->
-                Copyright &copy;<script>document.write(new Date().getFullYear());</script>
-                All rights reserved | This template is made with <i class="ti-heart" aria-hidden="true"></i> by <a
-                    href="https://colorlib.com" target="_blank">Colorlib</a>
-                <!-- Link back to Colorlib can't be removed. Template is licensed under CC BY 3.0. --></p>
-            <div class="col-lg-4 col-md-12 text-center text-lg-right footer-social">
-                <a href="#"><i class="ti-facebook"></i></a>
-                <a href="#"> <i class="ti-twitter"></i> </a>
-                <a href="#"><i class="ti-instagram"></i></a>
-                <a href="#"><i class="ti-skype"></i></a>
-            </div>
-        </div>
-    </div>
-</footer>
-<!-- footer part end-->
 
-<!-- jquery plugins here-->
-<!-- jquery -->
-<script src="js/jquery-1.12.1.min.js"></script>
-<!-- popper js -->
-<script src="js/popper.min.js"></script>
-<!-- bootstrap js -->
-<script src="js/bootstrap.min.js"></script>
-<!-- easing js -->
-<script src="js/jquery.magnific-popup.js"></script>
-<!-- swiper js -->
-<script src="js/swiper.min.js"></script>
-<!-- swiper js -->
-<script src="js/masonry.pkgd.js"></script>
-<!-- particles js -->
-<script src="js/owl.carousel.min.js"></script>
-<!-- swiper js -->
-<script src="js/slick.min.js"></script>
-<!-- custom js -->
-<script src="js/custom.js"></script>
-
-
-</body>
-
-</html>
+{% block scripts %}
+    <!-- custom js -->
+    <script src={% static "js/autocomplete.js" %}></script>
+    <script type="text/javascript">
+        var arr = {{ all_eq|safe }};
+        autocomplete(document.getElementById("equity"), arr);
+    </script>
+{% endblock %}
