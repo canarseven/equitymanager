@@ -2,6 +2,8 @@ function autocomplete(inp, arr) {
     /*the autocomplete function takes two arguments,
     the text field element and an array of possible autocompleted values:*/
     var currentFocus;
+    /* a list that stores all entered equities*/
+    var allEquities = [];
     /*execute a function when someone writes in the text field:*/
     inp.addEventListener("input", function (e) {
         var a, b, i, val = this.value;
@@ -35,6 +37,10 @@ function autocomplete(inp, arr) {
                     /*close the list of autocompleted values,
                     (or any other open lists of autocompleted values:*/
                     closeAllLists();
+                    allEquities.push(inp.value);
+                    console.log(allEquities);
+                    addDiv(inp.value);
+                    inp.value = "";
                 });
                 a.appendChild(b);
             }
@@ -99,4 +105,18 @@ function autocomplete(inp, arr) {
     document.addEventListener("click", function (e) {
         closeAllLists(e.target);
     });
+}
+
+function addDiv(text) {
+    // create a new div element
+    var newDiv = document.createElement("div");
+    // and give it some content
+    newDiv.className = "chosen-equity";
+    var newContent = document.createTextNode(text);
+    // add the text node to the newly created div
+    newDiv.appendChild(newContent);
+
+    // add the newly created element and its content into the DOM
+    var currentDiv = document.getElementById("equities");
+    currentDiv.appendChild(newDiv);
 }

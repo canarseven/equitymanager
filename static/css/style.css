@@ -1,4 +1,14 @@
 /**************** extend css start ****************/
+
+.chosen-equity {
+    border-style: ridge;
+    padding: 5px;
+    border-radius: 1em;
+    margin-left: 5px;
+    margin-right: 5px;
+    text-align: center;
+}
+
 .active {
     font-weight: bold !important;
     background-color: rgba(0, 0, 0, 0) !important;
