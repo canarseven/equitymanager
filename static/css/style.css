@@ -1,4 +1,13 @@
 /**************** extend css start ****************/
+.active {
+    font-weight: bold !important;
+    background-color: rgba(0, 0, 0, 0) !important;
+}
+
+.active-dropdown {
+    font-weight: bold !important;
+}
+
 .calculator {
     width: 100%;
     border-style: ridge;
@@ -846,7 +855,6 @@ ul {
     transform-origin: top center;
     transform: scale(1, 0);
     display: block;
-    margin-top: 28px;
 }
 
 /* line 34, E:/167 Bizcon Business/Bizcon_html/sass/_button.scss */

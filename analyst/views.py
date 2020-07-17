@@ -1,10 +1,111 @@
 import json
 import os
+from collections import defaultdict
 
 import requests
 from django.shortcuts import render
 # Create your views here.
 from django.utils.datetime_safe import datetime
+
+
+def get_portfolio_builder(request):
+    key = os.getenv("FIN_KEY")
+    equities = get_all_equities(key)
+    if request.method == "GET":
+        return render(request, "analyst/portfolio-builder.html", {"all_eq": equities})
+    else:
+        tickers = request.POST["tickers"]
+        annual_returns = dict()
+        annual_volatility = dict()
+        annual_returns[tickers] = dict(list(label_annual_data(gather_annual_returns(key, tickers)).items())[:10])
+        annual_volatility[tickers] = dict(list(label_annual_data(gather_annual_volatility(key, tickers)).items())[:10])
+        years = [datetime.now().year - i for i in range(10)]
+        return render(request, "analyst/portfolio-builder.html", {"all_eq": equities,
+                                                                  "years": years,
+                                                                  "tickers": tickers,
+                                                                  "annual_returns": annual_returns,
+                                                                  "annual_volatility": annual_volatility
+                                                                  })
+
+
+def label_annual_data(annual_data):
+    labeled = defaultdict(dict)
+    this_year = datetime.now().year
+    for i in range(len(annual_data)):
+        labeled[this_year - i] = annual_data[i]
+    return labeled
+
+
+def gather_annual_volatility(key, ticker):
+    annual_volatility = get_yearly_volatility(key, ticker)
+    return annual_volatility
+
+
+def get_yearly_volatility(key, ticker):
+    daily_returns = get_daily_returns(key, ticker)
+    trading_days_per_year = 252
+
+    # The daily returns grouped into sublists of length 252
+    yearly_return_chunks = chunks(daily_returns, trading_days_per_year)
+
+    # The daily average return for a year
+    average_daily_returns = get_average_from_chunks(yearly_return_chunks)
+
+    # The daily average volatility for a year
+    daily_volatility = compute_volatility(yearly_return_chunks, average_daily_returns)
+
+    # The daily averages annualized
+    yearly_volatility = [vol * (trading_days_per_year ** (1 / 2)) for vol in daily_volatility]
+    return yearly_volatility
+
+
+def compute_volatility(returns, average_returns):
+    volatilities = []
+    for i in range(len(average_returns)):
+        summed_variance = 0
+        for ret in returns[i]:
+            summed_variance += (ret - average_returns[i]) ** 2
+        averaged_variance = summed_variance / len(returns[i])
+        volatilities.append(averaged_variance ** (1 / 2))
+    return volatilities
+
+
+def gather_annual_returns(key, ticker):
+    daily_returns = get_daily_returns(key, ticker)
+    annualized_returns = annualize_daily_returns(daily_returns)
+    return annualized_returns
+
+
+def annualize_daily_returns(daily_returns):
+    trading_days_per_year = 252
+    years = int(len(daily_returns) / trading_days_per_year)
+    yearly_chunks = chunks(daily_returns, trading_days_per_year)
+    average_daily_return = get_average_from_chunks(yearly_chunks)
+    ans_returns = []
+    for year in range(years):
+        ans_returns.append((1 + average_daily_return[year]) ** trading_days_per_year - 1)
+    return ans_returns
+
+
+def get_average_from_chunks(my_chunks):
+    averaged_chunks = []
+    for chunk in my_chunks:
+        averaged_chunks.append(sum(chunk) / len(chunk))
+    return averaged_chunks
+
+
+def get_daily_returns(key, ticker):
+    response = requests.get(
+        f"https://financialmodelingprep.com/api/v3/historical-price-full/{ticker}?serietype=line&apikey={key}")
+    prices = json.loads(response.text)
+    cleaned_prices = [price["close"] for price in prices["historical"]]
+    after_price = -1
+    returns = []
+    for price in cleaned_prices:
+        if after_price != -1:
+            returns.append((after_price - price) / price)
+        after_price = price
+    return returns
 
 
 def get_dcf(request):
@@ -138,3 +239,11 @@ def get_statement(key, ticker, statement_type):
 def get_company_profile(key, ticker):
     response = requests.get(f"https://financialmodelingprep.com/api/v3/profile/{ticker}?apikey={key}")
     return json.loads(response.text)[0]
+
+
+def chunks(lst, n):
+    """Yield successive n-sized chunks from lst."""
+    my_chunks = []
+    for i in range(0, len(lst), n):
+        my_chunks.append(lst[i:i + n])
+    return my_chunks

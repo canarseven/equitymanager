@@ -8,7 +8,7 @@
 {% endblock %}
 
 {% block title %}
-    DCF Calculator
+    Portfolio Builder
 {% endblock %}
 
 
@@ -32,8 +32,8 @@
                     Analysis
                 </a>
                 <div class="dropdown-menu" aria-labelledby="navbarDropdown">
-                    <a class="dropdown-item active" href="{% url 'dcf-calculator' %}">DCF-Calculator</a>
-                    <a class="dropdown-item" href="{% url 'portfolio-builder' %}">Portfolio Builder</a>
+                    <a class="dropdown-item" href="{% url 'dcf-calculator' %}">DCF-Calculator</a>
+                    <a class="dropdown-item active" href="{% url 'portfolio-builder' %}">Portfolio Builder</a>
                 </div>
             </li>
         </ul>
@@ -44,28 +44,18 @@
 {% block main %}
     <div class="calculator">
         <div>
-            <h2>Automatic DCF-Calculator</h2>
+            <h2>Portfolio Builder</h2>
             <div class="row">
-                <form action="{% url 'dcf-calculator' %}" method="post" class="form-input">
+                <form action="{% url 'portfolio-builder' %}" method="post" class="form-input">
                     {% csrf_token %}
                     <div class="form-group">
                         <div class="input-group mb-3" style="width: 100%; margin: 10px;">
-                            <label for="equity">Choose an equity:</label>
+                            <label for="tickers">Choose an equity:</label>
                             <div class="autocomplete" style="width: inherit">
-                                <input type="text" id="equity" name="equity" style="width: inherit">
+                                <input type="text" id="equity" name="tickers" style="width: inherit" multiple>
                             </div>
                         </div>
                         <div class="row" style="justify-content: center;">
-                            <div class="input-group mb-3" style="width: 45%; margin: 10px;">
-                                <label for="discount_rate">Discount rate (in %):</label>
-                                <input type="number" class="form-control" style="width: 100%" name="discount_rate"
-                                       placeholder={{ discount_rate }}>
-                            </div>
-                            <div class="input-group mb-3" style="width: 45%; margin: 10px;">
-                                <label for="years">Historic data to use (in years):</label>
-                                <input type="number" class="form-control" style="width: 100%" name="years"
-                                       placeholder={{ years }}>
-                            </div>
                         </div>
                     </div>
                     <button class="button rounded-0 primary-bg text-white w-100 btn_4" type="submit">Compute</button>
@@ -76,41 +66,37 @@
             <div class="excel scrollable">
                 <table class="table">
                     <tr>
-                        <th>{{ eq }} in USD</th>
-                        {% for year in past_years %}
+                        <th>Calculated Returns</th>
+                        {% for year in years %}
                             <th>{{ year }}</th>
                         {% endfor %}
                     </tr>
-                    {% for k,v in used_params.items %}
+                    {% for k,v in annual_returns.items %}
                         <tr>
-                            <td>{{ k }}</td>
-                            {% for paramvalue in v %}
-                                <td>{{ paramvalue|floatformat:2|intcomma }}</td>
+                            <td>{{ k|safe }}</td>
+                            {% for k2,v2 in v.items %}
+                                <td>{{ v2|floatformat:2|intcomma }}</td>
                             {% endfor %}
                         </tr>
                     {% endfor %}
-                    <tr style="font-weight: bold">
-                        <td>UFCF</td>
-                        {% for cashflow in ufcf %}
-                            <td>{{ cashflow|floatformat:2|intcomma }}</td>
-                        {% endfor %}
-                    </tr>
                 </table>
             </div>
             <div class="excel scrollable">
                 <table class="table">
                     <tr>
-                        <th>{{ eq }} in USD</th>
-                        <th>Today</th>
+                        <th>Calculated Volatility</th>
+                        {% for year in years %}
+                            <th>{{ year }}</th>
+                        {% endfor %}
                     </tr>
-                    <tr>
-                        <td>Equity Value</td>
-                        <td>{{ eq_val|floatformat:2|intcomma }}</td>
-                    </tr>
-                    <tr>
-                        <td>Share Price</td>
-                        <td>{{ pps|floatformat:2|intcomma }}</td>
-                    </tr>
+                    {% for k,v in annual_volatility.items %}
+                        <tr>
+                            <td>{{ k }}</td>
+                            {% for k2,v2 in v.items %}
+                                <td>{{ v2|floatformat:2|intcomma }}</td>
+                            {% endfor %}
+                        </tr>
+                    {% endfor %}
                 </table>
             </div>
         </div>
