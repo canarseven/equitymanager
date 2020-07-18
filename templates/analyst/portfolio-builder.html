@@ -46,7 +46,7 @@
         <div>
             <h2>Portfolio Builder</h2>
             <div class="row">
-                <form action="{% url 'portfolio-builder' %}" method="post" class="form-input">
+                <form action="{% url 'portfolio-builder' %}" method="post" class="form-input" id="pBuilderForm">
                     {% csrf_token %}
                     <div class="form-group">
                         <div class="input-group mb-3" style="width: 100%; margin: 10px;">
@@ -56,47 +56,38 @@
                             </div>
                         </div>
                         <div class="row" id="equities" style="justify-content: center;">
+                            <input type="text" id="chosenTickers" name="chosenTickers"
+                                   style="visibility: hidden; position: absolute" multiple>
                         </div>
                     </div>
-                    <button class="button rounded-0 primary-bg text-white w-100 btn_4" type="submit">Compute</button>
+                    <button class="button rounded-0 primary-bg text-white w-100 btn_4" id="submitBtn" type="submit">
+                        Compute
+                    </button>
                 </form>
                 <div class="side robot">
                 </div>
             </div>
             <div class="excel scrollable">
-                <table class="table">
+                <table id="tblReturns" class="table">
+                    <thead>
                     <tr>
                         <th>Calculated Returns</th>
-                        {% for year in years %}
-                            <th>{{ year }}</th>
-                        {% endfor %}
                     </tr>
-                    {% for k,v in annual_returns.items %}
-                        <tr>
-                            <td>{{ k|safe }}</td>
-                            {% for k2,v2 in v.items %}
-                                <td>{{ v2|floatformat:2|intcomma }}</td>
-                            {% endfor %}
-                        </tr>
-                    {% endfor %}
+                    </thead>
+                    <tbody>
+                    </tbody>
                 </table>
             </div>
             <div class="excel scrollable">
-                <table class="table">
+                <table id="tblVolats" class="table">
+                    <thead>
                     <tr>
                         <th>Calculated Volatility</th>
-                        {% for year in years %}
-                            <th>{{ year }}</th>
-                        {% endfor %}
                     </tr>
-                    {% for k,v in annual_volatility.items %}
-                        <tr>
-                            <td>{{ k }}</td>
-                            {% for k2,v2 in v.items %}
-                                <td>{{ v2|floatformat:2|intcomma }}</td>
-                            {% endfor %}
-                        </tr>
-                    {% endfor %}
+                    </thead>
+                    <tbody>
+
+                    </tbody>
                 </table>
             </div>
         </div>

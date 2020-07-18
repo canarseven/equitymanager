@@ -3,6 +3,7 @@ import os
 from collections import defaultdict
 
 import requests
+from django.http import JsonResponse
 from django.shortcuts import render
 # Create your views here.
 from django.utils.datetime_safe import datetime
@@ -14,18 +15,24 @@ def get_portfolio_builder(request):
     if request.method == "GET":
         return render(request, "analyst/portfolio-builder.html", {"all_eq": equities})
     else:
-        tickers = request.POST["tickers"]
+        tickers = json.loads(request.POST["chosenTickers"])
         annual_returns = dict()
         annual_volatility = dict()
-        annual_returns[tickers] = dict(list(label_annual_data(gather_annual_returns(key, tickers)).items())[:10])
-        annual_volatility[tickers] = dict(list(label_annual_data(gather_annual_volatility(key, tickers)).items())[:10])
+        for ticker, value in tickers.items():
+            try:
+                annual_returns[ticker] = dict(list(label_annual_data(gather_annual_returns(key, ticker)).items())[:10])
+                annual_volatility[ticker] = dict(
+                    list(label_annual_data(gather_annual_volatility(key, ticker)).items())[:10])
+            except KeyError:
+                annual_returns[ticker] = {datetime.now().year: -1}
+                annual_volatility[ticker] = {datetime.now().year: -1}
         years = [datetime.now().year - i for i in range(10)]
-        return render(request, "analyst/portfolio-builder.html", {"all_eq": equities,
-                                                                  "years": years,
-                                                                  "tickers": tickers,
-                                                                  "annual_returns": annual_returns,
-                                                                  "annual_volatility": annual_volatility
-                                                                  })
+        return JsonResponse({"all_eq": equities,
+                             "years": years,
+                             "tickers": tickers,
+                             "annual_returns": annual_returns,
+                             "annual_volatility": annual_volatility
+                             })
 
 
 def label_annual_data(annual_data):

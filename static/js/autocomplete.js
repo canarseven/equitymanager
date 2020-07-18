@@ -3,7 +3,7 @@ function autocomplete(inp, arr) {
     the text field element and an array of possible autocompleted values:*/
     var currentFocus;
     /* a list that stores all entered equities*/
-    var allEquities = [];
+    var allEquities = {};
     /*execute a function when someone writes in the text field:*/
     inp.addEventListener("input", function (e) {
         var a, b, i, val = this.value;
@@ -37,10 +37,12 @@ function autocomplete(inp, arr) {
                     /*close the list of autocompleted values,
                     (or any other open lists of autocompleted values:*/
                     closeAllLists();
-                    allEquities.push(inp.value);
-                    console.log(allEquities);
-                    addDiv(inp.value);
-                    inp.value = "";
+                    if (!(inp.value in allEquities)) {
+                        allEquities[inp.value] = inp.value;
+                        console.log(allEquities);
+                        addDiv(inp.value, allEquities);
+                        inp.value = "";
+                    }
                 });
                 a.appendChild(b);
             }
@@ -107,16 +109,156 @@ function autocomplete(inp, arr) {
     });
 }
 
-function addDiv(text) {
+function addDiv(text, myJson) {
     // create a new div element
-    var newDiv = document.createElement("div");
+    let newDiv = document.createElement("div");
     // and give it some content
+    newDiv.name = text;
     newDiv.className = "chosen-equity";
-    var newContent = document.createTextNode(text);
+    newDiv.onmouseover = () => {
+        newDiv.style.background = 'rgb(142,0,0)';
+        newDiv.style.color = 'rgb(241, 241, 241)';
+    };
+    newDiv.onmouseleave = () => {
+        newDiv.style.background = 'rgba(0, 0, 0, 0)';
+        newDiv.style.color = 'rgb(0, 0, 0)';
+    };
+    let newContent = document.createTextNode(text);
     // add the text node to the newly created div
     newDiv.appendChild(newContent);
 
     // add the newly created element and its content into the DOM
-    var currentDiv = document.getElementById("equities");
+    let currentDiv = document.getElementById("equities");
     currentDiv.appendChild(newDiv);
+    newDiv.onclick = () => {
+        delDiv(text, myJson)
+    };
+
+    //add hidden input field for ajax request later
+    addHidden(text);
+}
+
+function addHidden(text) {
+    let hiddenInput = document.getElementById("chosenTickers");
+    let inputJson = {};
+    if (hiddenInput.value) {
+        inputJson = JSON.parse(hiddenInput.value);
+    }
+    inputJson[text] = text;
+    hiddenInput.value = JSON.stringify(inputJson);
+}
+
+function delHidden(text) {
+    let hiddenInput = document.getElementById("chosenTickers");
+    let inputJson = JSON.parse(hiddenInput.value);
+    delete inputJson[text];
+    hiddenInput.value = JSON.stringify(inputJson);
+}
+
+function delDiv(text, myJson) {
+    removeChildren(text, "equities");
+    delHidden(text);
+    delete myJson[text];
+}
+
+function removeChildren(removeMe, parentId) {
+    let childNodes = document.getElementById(parentId).childNodes;
+    for (let i = childNodes.length - 1; i >= 0; i--) {
+        let childNode = childNodes[i];
+        if (childNode.name == removeMe) {
+            childNode.parentNode.removeChild(childNode);
+        }
+    }
+}
+
+function addLoading(elemId) {
+    let loaderDiv = document.createElement("div");
+    loaderDiv.className = "loader";
+    loaderDiv.tagName = "loadAnim";
+    let elem = document.getElementById(elemId);
+    let tr = elem.tHead.children[0];
+    let th = document.createElement("th");
+    th.appendChild(loaderDiv);
+    tr.appendChild(th);
+}
+
+function removeLoading(elemId) {
+    let elem = document.getElementsByClassName("loader");
+    let len = elem.length;
+    for (let i = 0; i < len; i++) {
+        let grandParentNode = elem[0].parentNode.parentNode;
+        let removeMe = grandParentNode.children[1];
+        grandParentNode.removeChild(removeMe);
+    }
+
+}
+
+function refreshTbls(tbls, data) {
+    for (let i in tbls) {
+        let myTbl = document.getElementById(tbls[i]);
+        myTbl.innerHTML = "";
+        let tHead = myTbl.createTHead();
+        let row = tHead.insertRow();
+        let th = document.createElement("th");
+        th.innerText = data[i];
+        row.appendChild(th);
+        myTbl.createTBody();
+    }
+}
+
+$("#pBuilderForm").submit(function (event) {
+    let tbls = ["tblReturns", "tblVolats"];
+    let headers = ["Calculated Returns", "Calculated Volatility"];
+    event.preventDefault(); //prevent default action
+    $("#submitBtn").prop("disabled", true);
+    refreshTbls(tbls, headers);
+    let post_url = $(this).attr("action"); //get form action url
+    let request_method = $(this).attr("method"); //get form GET/POST method
+    let form_data = $(this).serialize(); //Encode form elements for submission
+    addLoading(tbls[0]);
+    addLoading(tbls[1]);
+
+    $.ajax({
+        url: post_url,
+        type: request_method,
+        data: form_data,
+        success: function (data) {
+            removeLoading();
+            createPBuilderTable(tbls[0], data);
+            createPBuilderTable(tbls[1], data);
+            $("#submitBtn").prop("disabled", false);
+        }
+    });
+    return false;
+});
+
+function buildTblHead(tblId, data) {
+    let tHead = document.getElementById(tblId).getElementsByTagName("thead")[0];
+    let row = tHead.children[0];
+    for (let i in data) {
+        let cell = document.createElement("th");
+        let text = document.createTextNode(data[i]);
+        cell.appendChild(text);
+        row.appendChild(cell);
+    }
+}
+
+function buildTblBody(tblId, data) {
+    let tBody = document.getElementById(tblId).getElementsByTagName("tbody")[0];
+    for (let ticker in data.annual_returns) {
+        let row = tBody.insertRow();
+        let cell = row.insertCell();
+        let text = document.createTextNode(ticker);
+        cell.appendChild(text);
+        for (let year in data.annual_returns[ticker]) {
+            cell = row.insertCell();
+            text = document.createTextNode(data.annual_returns[ticker][year].toFixed(2));
+            cell.appendChild(text);
+        }
+    }
+}
+
+function createPBuilderTable(tblId, data) {
+    buildTblHead(tblId, data.years);
+    buildTblBody(tblId, data);
 }
