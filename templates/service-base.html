@@ -56,27 +56,17 @@
 {% endblock %}
 <!-- breadcrumb start-->
 <!--================Blog Area =================-->
-<section class="blog_area single-post-area">
-    <div class="container">
-        <div class="row">
+
             {% block main %}
 
             {% endblock %}
-        </div>
-    </div>
-</section>
+
 <!--================Blog Area end =================-->
 
 <!-- footer part start-->
-<section class="footer-area section_padding">
-    <div class="container">
-        <div class="row">
             {% block footer %}
 
             {% endblock %}
-        </div>
-    </div>
-</section>
 <footer class="copyright_part">
     <div class="container">
         <div class="row align-items-center">
@@ -116,6 +106,8 @@
 <script src={% static "js/slick.min.js" %}></script>
 <!-- custom js -->
 <script src={% static "js/custom.js" %}></script>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@2.9.3/dist/Chart.min.js"></script>
 
 {% block scripts %}
 

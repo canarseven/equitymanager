@@ -42,97 +42,72 @@
 
 <!--================Blog Area =================-->
 {% block main %}
-    <div class="calculator">
-        <div>
-            <h2>Portfolio Builder</h2>
+    <section class="blog_area single-post-area service-menu">
+        <div class="container">
             <div class="row">
-                <form action="{% url 'portfolio-builder' %}" method="post" class="form-input" id="pBuilderForm">
-                    {% csrf_token %}
-                    <div class="form-group">
-                        <div class="input-group mb-3" style="width: 100%; margin: 10px;">
-                            <label for="tickers">Choose an equity:</label>
-                            <div class="autocomplete" style="width: inherit">
-                                <input type="text" id="equity" name="tickers" style="width: inherit" multiple>
+                <div class="calculator">
+                    <div>
+                        <h2>Portfolio Builder</h2>
+                        <div class="row">
+                            <form action="{% url 'portfolio-builder' %}" method="post" class="form-input"
+                                  id="pBuilderForm">
+                                {% csrf_token %}
+                                <div class="form-group">
+                                    <div class="input-group mb-3" style="width: 100%; margin: 10px;">
+                                        <label for="tickers">Choose an equity:</label>
+                                        <div class="autocomplete" style="width: inherit">
+                                            <input type="text" id="equity" name="tickers" style="width: inherit"
+                                                   multiple>
+                                        </div>
+                                    </div>
+                                    <div class="row" id="equities" style="justify-content: center;">
+                                        <input type="text" id="chosenTickers" name="chosenTickers"
+                                               style="visibility: hidden; position: absolute" multiple>
+                                    </div>
+                                </div>
+                                <button class="button rounded-0 primary-bg text-white w-100 btn_4" id="submitBtn"
+                                        type="submit">
+                                    Compute
+                                </button>
+                            </form>
+                            <div class="side form-input">
+                                <canvas id="efficientFrontier"></canvas>
                             </div>
                         </div>
-                        <div class="row" id="equities" style="justify-content: center;">
-                            <input type="text" id="chosenTickers" name="chosenTickers"
-                                   style="visibility: hidden; position: absolute" multiple>
+                        <div class="excel scrollable">
+                            <table id="tblReturns" class="table">
+                                <thead>
+                                <tr>
+                                    <th>Calculated Returns</th>
+                                </tr>
+                                </thead>
+                                <tbody>
+                                </tbody>
+                            </table>
+                        </div>
+                        <div class="excel scrollable">
+                            <table id="tblVolats" class="table">
+                                <thead>
+                                <tr>
+                                    <th>Calculated Volatility</th>
+                                </tr>
+                                </thead>
+                                <tbody>
+
+                                </tbody>
+                            </table>
                         </div>
                     </div>
-                    <button class="button rounded-0 primary-bg text-white w-100 btn_4" id="submitBtn" type="submit">
-                        Compute
-                    </button>
-                </form>
-                <div class="side robot">
                 </div>
             </div>
-            <div class="excel scrollable">
-                <table id="tblReturns" class="table">
-                    <thead>
-                    <tr>
-                        <th>Calculated Returns</th>
-                    </tr>
-                    </thead>
-                    <tbody>
-                    </tbody>
-                </table>
-            </div>
-            <div class="excel scrollable">
-                <table id="tblVolats" class="table">
-                    <thead>
-                    <tr>
-                        <th>Calculated Volatility</th>
-                    </tr>
-                    </thead>
-                    <tbody>
-
-                    </tbody>
-                </table>
-            </div>
         </div>
-    </div>
+    </section>
 {% endblock %}
 <!--================Blog Area end =================-->
 
 <!-- footer part start-->
 {% block footer %}
-    <div class="col-xl-2 col-sm-4 mb-4 mb-xl-0 single-footer-widget">
-        <h4>Top Products</h4>
-        <ul>
-            <li><a href="#">Managed Website</a></li>
-            <li><a href="#">Manage Reputation</a></li>
-            <li><a href="#">Power Tools</a></li>
-            <li><a href="#">Marketing Service</a></li>
-        </ul>
-    </div>
-    <div class="col-xl-2 col-sm-4 mb-4 mb-xl-0 single-footer-widget">
-        <h4>Quick Links</h4>
-        <ul>
-            <li><a href="#">Jobs</a></li>
-            <li><a href="#">Brand Assets</a></li>
-            <li><a href="#">Investor Relations</a></li>
-            <li><a href="#">Terms of Service</a></li>
-        </ul>
-    </div>
-    <div class="col-xl-2 col-sm-4 mb-4 mb-xl-0 single-footer-widget">
-        <h4>Features</h4>
-        <ul>
-            <li><a href="#">Jobs</a></li>
-            <li><a href="#">Brand Assets</a></li>
-            <li><a href="#">Investor Relations</a></li>
-            <li><a href="#">Terms of Service</a></li>
-        </ul>
-    </div>
-    <div class="col-xl-2 col-sm-4 mb-4 mb-xl-0 single-footer-widget">
-        <h4>Resources</h4>
-        <ul>
-            <li><a href="#">Guides</a></li>
-            <li><a href="#">Research</a></li>
-            <li><a href="#">Experts</a></li>
-            <li><a href="#">Agencies</a></li>
-        </ul>
-    </div>
+
 {% endblock %}
 
 {% block scripts %}
@@ -141,5 +116,6 @@
     <script type="text/javascript">
         var arr = {{ all_eq|safe }};
         autocomplete(document.getElementById("equity"), arr);
+        pBuilderForm();
     </script>
 {% endblock %}

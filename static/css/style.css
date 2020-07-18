@@ -1,5 +1,19 @@
 /**************** extend css start ****************/
 
+.service-menu {
+    margin-bottom: 206px;
+}
+
+.title-menu {
+    max-width: 60%;
+}
+
+.hover {
+    background: rgb(142, 0, 0);
+    color: rgb(241, 241, 241);
+    border-style: inset !important;
+}
+
 .loader {
     border: 6px solid #f3f3f3;
     border-top: 6px solid #3498db;
@@ -45,6 +59,7 @@
 
 .side {
     width: 50%;
+    padding: 20px;
     text-align: center;
 }
 
@@ -53,10 +68,12 @@
 }
 
 .form-input {
-    width: 50%;
+    margin: 10px;
+    width: 48%;
     background-color: rgba(193, 193, 193, 0.23);
     border-radius: 1em;
     padding: 20px;
+    box-shadow: 4px 6px 4px rgba(0, 0, 0, 0.3);
 }
 
 .excel {

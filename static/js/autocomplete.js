@@ -39,7 +39,6 @@ function autocomplete(inp, arr) {
                     closeAllLists();
                     if (!(inp.value in allEquities)) {
                         allEquities[inp.value] = inp.value;
-                        console.log(allEquities);
                         addDiv(inp.value, allEquities);
                         inp.value = "";
                     }
@@ -116,12 +115,10 @@ function addDiv(text, myJson) {
     newDiv.name = text;
     newDiv.className = "chosen-equity";
     newDiv.onmouseover = () => {
-        newDiv.style.background = 'rgb(142,0,0)';
-        newDiv.style.color = 'rgb(241, 241, 241)';
+        newDiv.classList.add("hover");
     };
     newDiv.onmouseleave = () => {
-        newDiv.style.background = 'rgba(0, 0, 0, 0)';
-        newDiv.style.color = 'rgb(0, 0, 0)';
+        newDiv.classList.remove("hover");
     };
     let newContent = document.createTextNode(text);
     // add the text node to the newly created div
@@ -182,7 +179,7 @@ function addLoading(elemId) {
     tr.appendChild(th);
 }
 
-function removeLoading(elemId) {
+function removeLoading() {
     let elem = document.getElementsByClassName("loader");
     let len = elem.length;
     for (let i = 0; i < len; i++) {
@@ -206,31 +203,77 @@ function refreshTbls(tbls, data) {
     }
 }
 
-$("#pBuilderForm").submit(function (event) {
-    let tbls = ["tblReturns", "tblVolats"];
-    let headers = ["Calculated Returns", "Calculated Volatility"];
-    event.preventDefault(); //prevent default action
-    $("#submitBtn").prop("disabled", true);
-    refreshTbls(tbls, headers);
-    let post_url = $(this).attr("action"); //get form action url
-    let request_method = $(this).attr("method"); //get form GET/POST method
-    let form_data = $(this).serialize(); //Encode form elements for submission
-    addLoading(tbls[0]);
-    addLoading(tbls[1]);
+function random_rgba() {
+    var o = Math.round, r = Math.random, s = 255;
+    return 'rgba(' + o(r() * s) + ',' + o(r() * s) + ',' + o(r() * s) + ', 1)';
+}
 
-    $.ajax({
-        url: post_url,
-        type: request_method,
-        data: form_data,
-        success: function (data) {
-            removeLoading();
-            createPBuilderTable(tbls[0], data);
-            createPBuilderTable(tbls[1], data);
-            $("#submitBtn").prop("disabled", false);
+function createDataSets(data) {
+    let dataSets = [];
+    for (let index in data.tickers) {
+        let ticker = data.tickers[index];
+        let thisYear = new Date().getFullYear();
+        let myData = {
+            x: data.annual_volatility[ticker][thisYear],
+            y: data.annual_returns[ticker][thisYear]
+        }
+        let dataSet = {
+            label: ticker,
+            data: [myData],
+            backgroundColor: random_rgba()
+        }
+        dataSets.push(dataSet);
+    }
+    return dataSets;
+}
+
+function createFrontier(data) {
+    let dataSets = createDataSets(data);
+    var ctx = document.getElementById('efficientFrontier').getContext('2d');
+    var scatterChart = new Chart(ctx, {
+        type: 'scatter',
+        data: {
+            datasets: dataSets
+        },
+        options: {
+            scales: {
+                xAxes: [{
+                    type: 'linear',
+                    position: 'bottom'
+                }]
+            }
         }
     });
-    return false;
-});
+}
+
+function pBuilderForm() {
+    $("#pBuilderForm").submit(function (event) {
+        let tbls = ["tblReturns", "tblVolats"];
+        let headers = ["Calculated Returns", "Calculated Volatility"];
+        event.preventDefault(); //prevent default action
+        $("#submitBtn").prop("disabled", true);
+        refreshTbls(tbls, headers);
+        let post_url = $(this).attr("action"); //get form action url
+        let request_method = $(this).attr("method"); //get form GET/POST method
+        let form_data = $(this).serialize(); //Encode form elements for submission
+        addLoading(tbls[0]);
+        addLoading(tbls[1]);
+
+        $.ajax({
+            url: post_url,
+            type: request_method,
+            data: form_data,
+            success: function (data) {
+                removeLoading();
+                createPBuilderTable(tbls[0], "return", data);
+                createPBuilderTable(tbls[1], "risk", data);
+                createFrontier(data);
+                $("#submitBtn").prop("disabled", false);
+            }
+        });
+        return false;
+    });
+}
 
 function buildTblHead(tblId, data) {
     let tHead = document.getElementById(tblId).getElementsByTagName("thead")[0];
@@ -243,22 +286,26 @@ function buildTblHead(tblId, data) {
     }
 }
 
-function buildTblBody(tblId, data) {
+function buildTblBody(tblId, type, data) {
     let tBody = document.getElementById(tblId).getElementsByTagName("tbody")[0];
-    for (let ticker in data.annual_returns) {
+    let dataSet = data.annual_returns;
+    if (type === "risk") {
+        dataSet = data.annual_volatility;
+    }
+    for (let ticker in dataSet) {
         let row = tBody.insertRow();
         let cell = row.insertCell();
         let text = document.createTextNode(ticker);
         cell.appendChild(text);
-        for (let year in data.annual_returns[ticker]) {
-            cell = row.insertCell();
-            text = document.createTextNode(data.annual_returns[ticker][year].toFixed(2));
+        for (let year in dataSet[ticker]) {
+            cell = row.insertCell(1);
+            text = document.createTextNode(dataSet[ticker][year].toFixed(2));
             cell.appendChild(text);
         }
     }
 }
 
-function createPBuilderTable(tblId, data) {
+function createPBuilderTable(tblId, type, data) {
     buildTblHead(tblId, data.years);
-    buildTblBody(tblId, data);
+    buildTblBody(tblId, type, data);
 }

@@ -42,120 +42,94 @@
 
 <!--================Blog Area =================-->
 {% block main %}
-    <div class="calculator">
-        <div>
-            <h2>Automatic DCF-Calculator</h2>
+    <section class="blog_area single-post-area service-menu">
+        <div class="container">
             <div class="row">
-                <form action="{% url 'dcf-calculator' %}" method="post" class="form-input">
-                    {% csrf_token %}
-                    <div class="form-group">
-                        <div class="input-group mb-3" style="width: 100%; margin: 10px;">
-                            <label for="equity">Choose an equity:</label>
-                            <div class="autocomplete" style="width: inherit">
-                                <input type="text" id="equity" name="equity" style="width: inherit">
+                <div class="calculator">
+                    <div>
+                        <h2>Automatic DCF-Calculator</h2>
+                        <div class="row">
+                            <form action="{% url 'dcf-calculator' %}" method="post" class="form-input">
+                                {% csrf_token %}
+                                <div class="form-group">
+                                    <div class="input-group mb-3" style="width: 100%; margin: 10px;">
+                                        <label for="equity">Choose an equity:</label>
+                                        <div class="autocomplete" style="width: inherit">
+                                            <input type="text" id="equity" name="equity" style="width: inherit">
+                                        </div>
+                                    </div>
+                                    <div class="row" style="justify-content: center;">
+                                        <div class="input-group mb-3" style="width: 45%; margin: 10px;">
+                                            <label for="discount_rate">Discount rate (in %):</label>
+                                            <input type="number" class="form-control" style="width: 100%"
+                                                   name="discount_rate"
+                                                   placeholder={{ discount_rate }}>
+                                        </div>
+                                        <div class="input-group mb-3" style="width: 45%; margin: 10px;">
+                                            <label for="years">Historic data to use (in years):</label>
+                                            <input type="number" class="form-control" style="width: 100%" name="years"
+                                                   placeholder={{ years }}>
+                                        </div>
+                                    </div>
+                                </div>
+                                <button class="button rounded-0 primary-bg text-white w-100 btn_4" type="submit">
+                                    Compute
+                                </button>
+                            </form>
+                            <div class="side robot">
                             </div>
                         </div>
-                        <div class="row" style="justify-content: center;">
-                            <div class="input-group mb-3" style="width: 45%; margin: 10px;">
-                                <label for="discount_rate">Discount rate (in %):</label>
-                                <input type="number" class="form-control" style="width: 100%" name="discount_rate"
-                                       placeholder={{ discount_rate }}>
-                            </div>
-                            <div class="input-group mb-3" style="width: 45%; margin: 10px;">
-                                <label for="years">Historic data to use (in years):</label>
-                                <input type="number" class="form-control" style="width: 100%" name="years"
-                                       placeholder={{ years }}>
-                            </div>
+                        <div class="excel scrollable">
+                            <table class="table">
+                                <tr>
+                                    <th>{{ eq }} in USD</th>
+                                    {% for year in past_years %}
+                                        <th>{{ year }}</th>
+                                    {% endfor %}
+                                </tr>
+                                {% for k,v in used_params.items %}
+                                    <tr>
+                                        <td>{{ k }}</td>
+                                        {% for paramvalue in v %}
+                                            <td>{{ paramvalue|floatformat:2|intcomma }}</td>
+                                        {% endfor %}
+                                    </tr>
+                                {% endfor %}
+                                <tr style="font-weight: bold">
+                                    <td>UFCF</td>
+                                    {% for cashflow in ufcf %}
+                                        <td>{{ cashflow|floatformat:2|intcomma }}</td>
+                                    {% endfor %}
+                                </tr>
+                            </table>
+                        </div>
+                        <div class="excel scrollable">
+                            <table class="table">
+                                <tr>
+                                    <th>{{ eq }} in USD</th>
+                                    <th>Today</th>
+                                </tr>
+                                <tr>
+                                    <td>Equity Value</td>
+                                    <td>{{ eq_val|floatformat:2|intcomma }}</td>
+                                </tr>
+                                <tr>
+                                    <td>Share Price</td>
+                                    <td>{{ pps|floatformat:2|intcomma }}</td>
+                                </tr>
+                            </table>
                         </div>
                     </div>
-                    <button class="button rounded-0 primary-bg text-white w-100 btn_4" type="submit">Compute</button>
-                </form>
-                <div class="side robot">
                 </div>
             </div>
-            <div class="excel scrollable">
-                <table class="table">
-                    <tr>
-                        <th>{{ eq }} in USD</th>
-                        {% for year in past_years %}
-                            <th>{{ year }}</th>
-                        {% endfor %}
-                    </tr>
-                    {% for k,v in used_params.items %}
-                        <tr>
-                            <td>{{ k }}</td>
-                            {% for paramvalue in v %}
-                                <td>{{ paramvalue|floatformat:2|intcomma }}</td>
-                            {% endfor %}
-                        </tr>
-                    {% endfor %}
-                    <tr style="font-weight: bold">
-                        <td>UFCF</td>
-                        {% for cashflow in ufcf %}
-                            <td>{{ cashflow|floatformat:2|intcomma }}</td>
-                        {% endfor %}
-                    </tr>
-                </table>
-            </div>
-            <div class="excel scrollable">
-                <table class="table">
-                    <tr>
-                        <th>{{ eq }} in USD</th>
-                        <th>Today</th>
-                    </tr>
-                    <tr>
-                        <td>Equity Value</td>
-                        <td>{{ eq_val|floatformat:2|intcomma }}</td>
-                    </tr>
-                    <tr>
-                        <td>Share Price</td>
-                        <td>{{ pps|floatformat:2|intcomma }}</td>
-                    </tr>
-                </table>
-            </div>
         </div>
-    </div>
+    </section>
 {% endblock %}
 <!--================Blog Area end =================-->
 
 <!-- footer part start-->
 {% block footer %}
-    <div class="col-xl-2 col-sm-4 mb-4 mb-xl-0 single-footer-widget">
-        <h4>Top Products</h4>
-        <ul>
-            <li><a href="#">Managed Website</a></li>
-            <li><a href="#">Manage Reputation</a></li>
-            <li><a href="#">Power Tools</a></li>
-            <li><a href="#">Marketing Service</a></li>
-        </ul>
-    </div>
-    <div class="col-xl-2 col-sm-4 mb-4 mb-xl-0 single-footer-widget">
-        <h4>Quick Links</h4>
-        <ul>
-            <li><a href="#">Jobs</a></li>
-            <li><a href="#">Brand Assets</a></li>
-            <li><a href="#">Investor Relations</a></li>
-            <li><a href="#">Terms of Service</a></li>
-        </ul>
-    </div>
-    <div class="col-xl-2 col-sm-4 mb-4 mb-xl-0 single-footer-widget">
-        <h4>Features</h4>
-        <ul>
-            <li><a href="#">Jobs</a></li>
-            <li><a href="#">Brand Assets</a></li>
-            <li><a href="#">Investor Relations</a></li>
-            <li><a href="#">Terms of Service</a></li>
-        </ul>
-    </div>
-    <div class="col-xl-2 col-sm-4 mb-4 mb-xl-0 single-footer-widget">
-        <h4>Resources</h4>
-        <ul>
-            <li><a href="#">Guides</a></li>
-            <li><a href="#">Research</a></li>
-            <li><a href="#">Experts</a></li>
-            <li><a href="#">Agencies</a></li>
-        </ul>
-    </div>
+
 {% endblock %}
 
 {% block scripts %}
