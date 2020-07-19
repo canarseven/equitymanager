@@ -113,6 +113,10 @@
 {% block scripts %}
     <!-- custom js -->
     <script src={% static "js/autocomplete.js" %}></script>
+    <script src={% static "js/loadingAnim.js" %}></script>
+    <script src={% static "js/charts.js" %}></script>
+    <script src={% static "js/tblUtilities.js" %}></script>
+    <script src={% static "js/portfolioBuilder.js" %}></script>
     <script type="text/javascript">
         var arr = {{ all_eq|safe }};
         autocomplete(document.getElementById("equity"), arr);

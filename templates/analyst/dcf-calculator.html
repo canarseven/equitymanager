@@ -49,7 +49,7 @@
                     <div>
                         <h2>Automatic DCF-Calculator</h2>
                         <div class="row">
-                            <form action="{% url 'dcf-calculator' %}" method="post" class="form-input">
+                            <form action="{% url 'dcf-calculator' %}" id="dcfCalcForm" method="post" class="form-input">
                                 {% csrf_token %}
                                 <div class="form-group">
                                     <div class="input-group mb-3" style="width: 100%; margin: 10px;">
@@ -63,16 +63,17 @@
                                             <label for="discount_rate">Discount rate (in %):</label>
                                             <input type="number" class="form-control" style="width: 100%"
                                                    name="discount_rate"
-                                                   placeholder={{ discount_rate }}>
+                                                   placeholder={{ chosen_discount_rate }}>
                                         </div>
                                         <div class="input-group mb-3" style="width: 45%; margin: 10px;">
                                             <label for="years">Historic data to use (in years):</label>
                                             <input type="number" class="form-control" style="width: 100%" name="years"
-                                                   placeholder={{ years }}>
+                                                   placeholder={{ chosen_years }}>
                                         </div>
                                     </div>
                                 </div>
-                                <button class="button rounded-0 primary-bg text-white w-100 btn_4" type="submit">
+                                <button class="button rounded-0 primary-bg text-white w-100 btn_4" id="submitBtn"
+                                        type="submit">
                                     Compute
                                 </button>
                             </form>
@@ -80,43 +81,14 @@
                             </div>
                         </div>
                         <div class="excel scrollable">
-                            <table class="table">
-                                <tr>
-                                    <th>{{ eq }} in USD</th>
-                                    {% for year in past_years %}
-                                        <th>{{ year }}</th>
-                                    {% endfor %}
-                                </tr>
-                                {% for k,v in used_params.items %}
-                                    <tr>
-                                        <td>{{ k }}</td>
-                                        {% for paramvalue in v %}
-                                            <td>{{ paramvalue|floatformat:2|intcomma }}</td>
-                                        {% endfor %}
-                                    </tr>
-                                {% endfor %}
+                            <table id="tblUFCF" class="table">
                                 <tr style="font-weight: bold">
                                     <td>UFCF</td>
-                                    {% for cashflow in ufcf %}
-                                        <td>{{ cashflow|floatformat:2|intcomma }}</td>
-                                    {% endfor %}
                                 </tr>
                             </table>
                         </div>
                         <div class="excel scrollable">
-                            <table class="table">
-                                <tr>
-                                    <th>{{ eq }} in USD</th>
-                                    <th>Today</th>
-                                </tr>
-                                <tr>
-                                    <td>Equity Value</td>
-                                    <td>{{ eq_val|floatformat:2|intcomma }}</td>
-                                </tr>
-                                <tr>
-                                    <td>Share Price</td>
-                                    <td>{{ pps|floatformat:2|intcomma }}</td>
-                                </tr>
+                            <table id="tblPPS" class="table">
                             </table>
                         </div>
                     </div>
@@ -135,8 +107,13 @@
 {% block scripts %}
     <!-- custom js -->
     <script src={% static "js/autocomplete.js" %}></script>
+    <script src={% static "js/loadingAnim.js" %}></script>
+    <script src={% static "js/charts.js" %}></script>
+    <script src={% static "js/tblUtilities.js" %}></script>
+    <script src={% static "js/dcfCalculator.js" %}></script>
     <script type="text/javascript">
         var arr = {{ all_eq|safe }};
         autocomplete(document.getElementById("equity"), arr);
+        dcfCalcForm();
     </script>
 {% endblock %}

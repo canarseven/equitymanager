@@ -116,15 +116,13 @@ def get_daily_returns(key, ticker):
 
 
 def get_dcf(request):
-    exchanges = ["NYSE", "NASAQ", "AMEX", "EURONEX", "TSX"]
     dr = 10
     key = os.getenv("FIN_KEY")
     years = 0
     equities = get_all_equities(key)
     if request.method == "GET":
-        return render(request, "analyst/dcf-calculator.html", {"exchanges": exchanges,
-                                                               "years": years,
-                                                               "discount_rate": dr,
+        return render(request, "analyst/dcf-calculator.html", {"chosen_years": years,
+                                                               "chosen_discount_rate": dr,
                                                                "all_eq": equities})
     else:
         eq = request.POST["equity"]
@@ -143,17 +141,15 @@ def get_dcf(request):
         pps = calculate_pps(key, eq, eq_val)
         current_year = datetime.now().year
         past_years = [current_year - i for i in range(1, years + 1)]
-        return render(request, "analyst/dcf-calculator.html", {"exchanges": exchanges,
-                                                               "equity": eq,
-                                                               "years": years,
-                                                               "curr_year": current_year,
-                                                               "past_years": past_years,
-                                                               "eq_val": eq_val,
-                                                               "used_params": used_list,
-                                                               "ufcf": ufcf,
-                                                               "discount_rate": dr,
-                                                               "pps": pps,
-                                                               "all_eq": equities})
+        return JsonResponse({"chosen_equity": eq,
+                             "chosen_years": years,
+                             "chosen_discount_rate": dr,
+                             "years": past_years,
+                             "ufcf": {"used_params": used_list,
+                                      "final_ufcf": ufcf},
+                             "pps": {"eq_val": eq_val,
+                                     "final_pps": pps},
+                             "all_eq": equities})
 
 
 def reformat_params(used_list):
