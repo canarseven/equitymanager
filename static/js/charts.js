@@ -19,6 +19,19 @@ function createDataSets(data) {
         }
         dataSets.push(dataSet);
     }
+
+    // Add the GMV Portfolio to the dataSet
+    let myData = {
+        x: (data.gmv_portfolio.risk * 100).toFixed(2),
+        y: (data.gmv_portfolio.return * 100).toFixed(2)
+    }
+    let dataSet = {
+        label: "GMV-Portfolio",
+        data: [myData],
+        backgroundColor: random_rgba()
+    }
+    dataSets.push(dataSet);
+
     return dataSets;
 }
 

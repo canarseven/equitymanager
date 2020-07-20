@@ -26,13 +26,118 @@ def get_portfolio_builder(request):
             except KeyError:
                 annual_returns[ticker] = {datetime.now().year: -1}
                 annual_volatility[ticker] = {datetime.now().year: -1}
+        all_returns = gather_all_returns(key, tickers)
+        all_corrs = compute_corr(key, all_returns)
+        gmv_portfolio = compute_gmv(annual_returns, annual_volatility, all_corrs)
         years = [datetime.now().year - i for i in range(10)]
         return JsonResponse({"all_eq": equities,
                              "years": years,
                              "tickers": tickers,
                              "annual_returns": annual_returns,
-                             "annual_volatility": annual_volatility
+                             "annual_volatility": annual_volatility,
+                             "gmv_portfolio": gmv_portfolio
                              })
+
+
+def compute_gmv(rets, vols, corrs):
+    # TODO: Improve trivial weighting method
+    current_year = datetime.now().year
+    # get the amount of equities (-1 because we will already assign weight to i)
+    equity_amount = len(vols.keys()) - 1
+    if equity_amount != 0:
+        all_local_mins = []
+        for i_weight in range(1, 10, 1):
+            i_weight = i_weight / 10
+            j_weight = (1 - i_weight) / equity_amount
+            for i_ticker in vols.keys():
+                sub_risks = []
+                sub_risk_sum = 0
+                for j_ticker in vols.keys():
+                    weights = [i_weight, j_weight]
+                    corr = corrs[i_ticker][j_ticker]
+                    # we are taking this years volatility (the volatility of the trailing 365 days)
+                    current_vols = [vols[i_ticker][current_year], vols[j_ticker][current_year]]
+                    current_corr = corr[0]
+                    sub_risk_sum += compute_portfolio_risk(weights, current_vols, current_corr)
+                sub_risks.append({"my_ticker": i_ticker,
+                                  "my_weight": i_weight,
+                                  "other_weight": j_weight,
+                                  "risk": sub_risk_sum ** (1 / 2)})
+                current_min = get_minimum_risk(sub_risks)
+                all_local_mins.append(current_min)
+        total_min = get_minimum_risk(all_local_mins)
+        sub_return = 0
+        for ticker, value in rets.items():
+            if ticker != total_min["my_ticker"]:
+                sub_return += value[current_year] * total_min["other_weight"]
+            else:
+                sub_return += value[current_year] * total_min["my_weight"]
+        total_min["return"] = sub_return
+        return total_min
+    else:
+        return {"my_ticker": list(vols)[0],
+                "my_weight": 1,
+                "other_weight": 0,
+                "risk": vols[list(vols)[0]][current_year]}
+
+
+def get_minimum_risk(my_list):
+    current_min = my_list[0]
+    for potential_min in my_list:
+        if potential_min["risk"] < current_min["risk"]:
+            current_min = potential_min
+    return current_min
+
+
+def compute_portfolio_risk(weights, vols, corr):
+    return vols[0] * weights[0] * vols[1] * weights[1] * corr
+
+
+def compute_corr(key, r):
+    all_corrs = defaultdict(dict)
+    all_corrs["completed"] = []
+    for x_ticker in r.keys():
+        for y_ticker in r.keys():
+            if x_ticker + y_ticker not in all_corrs["completed"] or y_ticker + x_ticker not in all_corrs["completed"]:
+                yearly_corr = []
+                for y_year in range(len(r[y_ticker]["returns"])):
+                    y_average = r[y_ticker]["average"][y_year]
+                    codeviation_sum = 0
+                    x_variance_sum = 0
+                    y_variance_sum = 0
+                    for y_returns_index in range(len(r[y_ticker]["returns"][y_year])):
+                        y_return = r[y_ticker]["returns"][y_year][y_returns_index]
+                        try:
+                            x_average = r[x_ticker]["average"][y_year]
+                            x_return = r[x_ticker]["returns"][y_year][y_returns_index]
+                        except IndexError:
+                            x_average = 0
+                            x_return = 0
+                        y_deviation = y_return - y_average
+                        x_deviation = x_return - x_average
+                        codeviation_sum += y_deviation * x_deviation
+                        x_variance_sum += x_deviation ** 2
+                        y_variance_sum += y_deviation ** 2
+                    if x_variance_sum != 0 and y_variance_sum != 0:
+                        corr = codeviation_sum / ((x_variance_sum * y_variance_sum) ** (1 / 2))
+                        print(f"{x_ticker}: {y_year}")
+                    else:
+                        corr = 0
+                    yearly_corr.append(corr)
+                all_corrs[x_ticker][y_ticker] = yearly_corr
+                all_corrs["completed"].append(x_ticker + y_ticker)
+    return all_corrs
+
+
+def gather_all_returns(key, tickers):
+    r = dict()
+    trading_days_per_year = 252
+    for ticker in tickers.values():
+        daily_returns = get_daily_returns(key, ticker)
+        avg_yrly_chunks = chunks(daily_returns, trading_days_per_year)
+        r[ticker] = {"returns": avg_yrly_chunks,
+                     "average": get_average_from_chunks(avg_yrly_chunks)}
+    return r
 
 
 def label_annual_data(annual_data):
@@ -44,11 +149,12 @@ def label_annual_data(annual_data):
 
 
 def gather_annual_volatility(key, ticker):
-    annual_volatility = get_yearly_volatility(key, ticker)
+    daily_volatility = get_daily_volatility(key, ticker)
+    annual_volatility = get_yearly_volatility(key, daily_volatility, 252)
     return annual_volatility
 
 
-def get_yearly_volatility(key, ticker):
+def get_daily_volatility(key, ticker):
     daily_returns = get_daily_returns(key, ticker)
     trading_days_per_year = 252
 
@@ -60,9 +166,12 @@ def get_yearly_volatility(key, ticker):
 
     # The daily average volatility for a year
     daily_volatility = compute_volatility(yearly_return_chunks, average_daily_returns)
+    return daily_volatility
 
-    # The daily averages annualized
-    yearly_volatility = [vol * (trading_days_per_year ** (1 / 2)) for vol in daily_volatility]
+
+def get_yearly_volatility(key, volatilities, periods):
+    # The periods averages annualized
+    yearly_volatility = [vol * (periods ** (1 / 2)) for vol in volatilities]
     return yearly_volatility
 
 
@@ -78,20 +187,25 @@ def compute_volatility(returns, average_returns):
 
 
 def gather_annual_returns(key, ticker):
+    trading_days_per_day = 252
     daily_returns = get_daily_returns(key, ticker)
-    annualized_returns = annualize_daily_returns(daily_returns)
+    annualized_returns = annualize_returns(daily_returns, trading_days_per_day)
     return annualized_returns
 
 
-def annualize_daily_returns(daily_returns):
-    trading_days_per_year = 252
-    years = int(len(daily_returns) / trading_days_per_year)
-    yearly_chunks = chunks(daily_returns, trading_days_per_year)
-    average_daily_return = get_average_from_chunks(yearly_chunks)
+def annualize_returns(r, periods):
+    years = int(len(r) / periods)
+    average_daily_return = get_average_for_period(r, periods)
     ans_returns = []
     for year in range(years):
-        ans_returns.append((1 + average_daily_return[year]) ** trading_days_per_year - 1)
+        ans_returns.append((1 + average_daily_return[year]) ** periods - 1)
     return ans_returns
+
+
+def get_average_for_period(r, periods):
+    yearly_chunks = chunks(r, periods)
+    average_daily_return = get_average_from_chunks(yearly_chunks)
+    return average_daily_return
 
 
 def get_average_from_chunks(my_chunks):
@@ -125,6 +239,7 @@ def get_dcf(request):
                                                                "chosen_discount_rate": dr,
                                                                "all_eq": equities})
     else:
+        #TODO: Debug DCF & PPS extreme values
         eq = request.POST["equity"]
         dr = int(request.POST["discount_rate"])
         years = int(request.POST["years"])
