@@ -2,6 +2,7 @@ import json
 import os
 from collections import defaultdict
 
+import pandas as pd
 import requests
 from django.http import JsonResponse
 from django.shortcuts import render
@@ -16,17 +17,19 @@ def get_portfolio_builder(request):
         return render(request, "analyst/portfolio-builder.html", {"all_eq": equities})
     else:
         tickers = json.loads(request.POST["chosenTickers"])
+        period = [request.POST["startPeriod"], request.POST["endPeriod"]]
         annual_returns = dict()
         annual_volatility = dict()
         for ticker, value in tickers.items():
             try:
-                annual_returns[ticker] = dict(list(label_annual_data(gather_annual_returns(key, ticker)).items())[:10])
+                annual_returns[ticker] = dict(
+                    list(label_annual_data(gather_annual_returns(key, ticker, period)).items())[:10])
                 annual_volatility[ticker] = dict(
                     list(label_annual_data(gather_annual_volatility(key, ticker)).items())[:10])
             except KeyError:
                 annual_returns[ticker] = {datetime.now().year: -1}
                 annual_volatility[ticker] = {datetime.now().year: -1}
-        all_returns = gather_all_returns(key, tickers)
+        all_returns = gather_all_returns(key, tickers, period)
         all_corrs = compute_corr(key, all_returns)
         gmv_portfolio = compute_gmv(annual_returns, annual_volatility, all_corrs)
         years = [datetime.now().year - i for i in range(10)]
@@ -45,27 +48,28 @@ def compute_gmv(rets, vols, corrs):
     # get the amount of equities (-1 because we will already assign weight to i)
     equity_amount = len(vols.keys()) - 1
     if equity_amount != 0:
-        all_local_mins = []
-        for i_weight in range(1, 10, 1):
+        sub_risks = []
+        for i_weight in range(0, 10, 1):
             i_weight = i_weight / 10
             j_weight = (1 - i_weight) / equity_amount
+            sub_risk_sum = 0
             for i_ticker in vols.keys():
-                sub_risks = []
-                sub_risk_sum = 0
                 for j_ticker in vols.keys():
-                    weights = [i_weight, j_weight]
+                    if i_ticker == j_ticker:
+                        weights = [i_weight, i_weight]
+                    else:
+                        weights = [i_weight, j_weight]
                     corr = corrs[i_ticker][j_ticker]
                     # we are taking this years volatility (the volatility of the trailing 365 days)
                     current_vols = [vols[i_ticker][current_year], vols[j_ticker][current_year]]
                     current_corr = corr[0]
                     sub_risk_sum += compute_portfolio_risk(weights, current_vols, current_corr)
-                sub_risks.append({"my_ticker": i_ticker,
-                                  "my_weight": i_weight,
-                                  "other_weight": j_weight,
-                                  "risk": sub_risk_sum ** (1 / 2)})
-                current_min = get_minimum_risk(sub_risks)
-                all_local_mins.append(current_min)
-        total_min = get_minimum_risk(all_local_mins)
+                    print(f"{i_ticker} x {j_ticker}: {sub_risk_sum}")
+            sub_risks.append({"my_ticker": i_ticker,
+                              "my_weight": i_weight,
+                              "other_weight": j_weight,
+                              "risk": sub_risk_sum ** (1 / 2)})
+        total_min = get_minimum_risk(sub_risks)
         sub_return = 0
         for ticker, value in rets.items():
             if ticker != total_min["my_ticker"]:
@@ -90,6 +94,7 @@ def get_minimum_risk(my_list):
 
 
 def compute_portfolio_risk(weights, vols, corr):
+    print(f"W:{weights}, V:{vols}, C:{corr}")
     return vols[0] * weights[0] * vols[1] * weights[1] * corr
 
 
@@ -120,7 +125,6 @@ def compute_corr(key, r):
                         y_variance_sum += y_deviation ** 2
                     if x_variance_sum != 0 and y_variance_sum != 0:
                         corr = codeviation_sum / ((x_variance_sum * y_variance_sum) ** (1 / 2))
-                        print(f"{x_ticker}: {y_year}")
                     else:
                         corr = 0
                     yearly_corr.append(corr)
@@ -129,11 +133,11 @@ def compute_corr(key, r):
     return all_corrs
 
 
-def gather_all_returns(key, tickers):
+def gather_all_returns(key, tickers, period):
     r = dict()
     trading_days_per_year = 252
     for ticker in tickers.values():
-        daily_returns = get_daily_returns(key, ticker)
+        daily_returns = get_daily_returns(key, ticker, period)
         avg_yrly_chunks = chunks(daily_returns, trading_days_per_year)
         r[ticker] = {"returns": avg_yrly_chunks,
                      "average": get_average_from_chunks(avg_yrly_chunks)}
@@ -186,9 +190,9 @@ def compute_volatility(returns, average_returns):
     return volatilities
 
 
-def gather_annual_returns(key, ticker):
+def gather_annual_returns(key, ticker, period):
     trading_days_per_day = 252
-    daily_returns = get_daily_returns(key, ticker)
+    daily_returns = get_daily_returns(key, ticker, period)
     annualized_returns = annualize_returns(daily_returns, trading_days_per_day)
     return annualized_returns
 
@@ -215,18 +219,25 @@ def get_average_from_chunks(my_chunks):
     return averaged_chunks
 
 
-def get_daily_returns(key, ticker):
+def get_daily_returns(key, ticker, period):
     response = requests.get(
         f"https://financialmodelingprep.com/api/v3/historical-price-full/{ticker}?serietype=line&apikey={key}")
     prices = json.loads(response.text)
-    cleaned_prices = [price["close"] for price in prices["historical"]]
+    cleaned_prices = [data["close"] for data in prices["historical"]]
+    cleaned_dates = [data["date"] for data in prices["historical"]]
+    df_prices = pd.DataFrame(cleaned_prices, index=cleaned_dates, columns=["close"])
+    df_prices.index = pd.to_datetime(df_prices.index, format="%Y-%m-%d").to_period('D')
+    start_period = str(int(period[0]) - 1)
+    end_period = str(int(period[1]) + 1)
+    df_prices = df_prices[end_period:start_period]
     after_price = -1
-    returns = []
-    for price in cleaned_prices:
+    df_returns = pd.DataFrame(columns=["return"])
+    for index, price in df_prices.itertuples():
         if after_price != -1:
-            returns.append((after_price - price) / price)
+            df_returns.loc[after_index] = (after_price - price) / price
         after_price = price
-    return returns
+        after_index = index
+    return df_returns
 
 
 def get_dcf(request):
@@ -239,7 +250,7 @@ def get_dcf(request):
                                                                "chosen_discount_rate": dr,
                                                                "all_eq": equities})
     else:
-        #TODO: Debug DCF & PPS extreme values
+        # TODO: Debug DCF & PPS extreme values
         eq = request.POST["equity"]
         dr = int(request.POST["discount_rate"])
         years = int(request.POST["years"])
