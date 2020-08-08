@@ -8,9 +8,11 @@ function createDataSets(data) {
     for (let index in data.tickers) {
         let ticker = data.tickers[index];
         let thisYear = new Date().getFullYear();
+        var vol = $.parseJSON('[' + data.annual_volatility + ']')[0];
+        var ret = $.parseJSON('[' + data.annual_returns + ']')[0];
         let myData = {
-            x: (data.annual_volatility[ticker][thisYear] * 100).toFixed(2),
-            y: (data.annual_returns[ticker][thisYear] * 100).toFixed(2)
+            x: (vol[ticker][thisYear] * 100).toFixed(2),
+            y: (ret[ticker][thisYear] * 100).toFixed(2)
         }
         let dataSet = {
             label: ticker,
@@ -20,17 +22,20 @@ function createDataSets(data) {
         dataSets.push(dataSet);
     }
 
-    // Add the GMV Portfolio to the dataSet
-    let myData = {
-        x: (data.gmv_portfolio.risk * 100).toFixed(2),
-        y: (data.gmv_portfolio.return * 100).toFixed(2)
+    // Add the Portfolios to the dataSet
+    for (let i in data.portfolios) {
+        let portfolio = data.portfolios[i];
+        let myData = {
+            x: (portfolio.risk * 100).toFixed(2),
+            y: (portfolio.ret * 100).toFixed(2)
+        }
+        let dataSet = {
+            label: portfolio.name,
+            data: [myData],
+            backgroundColor: random_rgba()
+        }
+        dataSets.push(dataSet);
     }
-    let dataSet = {
-        label: "GMV-Portfolio",
-        data: [myData],
-        backgroundColor: random_rgba()
-    }
-    dataSets.push(dataSet);
 
     return dataSets;
 }

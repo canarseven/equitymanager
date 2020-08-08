@@ -1,7 +1,7 @@
 function pBuilderForm() {
     $("#pBuilderForm").submit(function (event) {
         let tbls = ["tblReturns", "tblVolats", "tblPortfolio"];
-        let headers = ["Calculated Returns", "Calculated Volatility", "Your Portfolio"];
+        let headers = ["Calculated Returns", "Calculated Volatility", "Potential Portfolios"];
         event.preventDefault(); //prevent default action
         $("#submitBtn").prop("disabled", true);
         refreshTbls(tbls, headers);
@@ -36,20 +36,18 @@ function createDetailTable(tblId, data) {
 
 function buildPortfolioBody(tblId, data) {
     let tBody = document.getElementById(tblId).getElementsByTagName("tbody")[0];
-    let row = tBody.insertRow();
-    let cell = row.insertCell();
-    let text = document.createTextNode("Weights (in %)");
-    cell.appendChild(text);
-    for (let ticker in data.tickers) {
-        cell = row.insertCell();
-        if (ticker === data.gmv_portfolio.my_ticker) {
-            let dataNum = data.gmv_portfolio.my_weight * 100;
-            text = document.createTextNode(dataNum.toFixed(2));
-        } else {
-            let dataNum = data.gmv_portfolio.other_weight * 100;
-            text = document.createTextNode(dataNum.toFixed(2));
-        }
+    for (let i in data.portfolios) {
+        let portfolio = data.portfolios[i];
+        let row = tBody.insertRow();
+        let cell = row.insertCell();
+        let text = document.createTextNode(portfolio.name);
         cell.appendChild(text);
+        for (let ticker in data.tickers) {
+            cell = row.insertCell();
+            let dataNum = portfolio[ticker].weight * 100;
+            text = document.createTextNode(dataNum.toFixed(2) + "%");
+            cell.appendChild(text);
+        }
     }
 }
 
@@ -70,15 +68,16 @@ function buildTblBody(tblId, type, data) {
     if (type === "risk") {
         dataSet = data.annual_volatility;
     }
-    for (let ticker in dataSet) {
+    var jsonObj = $.parseJSON('[' + dataSet + ']')[0];
+    for (let ticker in jsonObj) {
         let row = tBody.insertRow();
         let cell = row.insertCell();
         let text = document.createTextNode(ticker);
         cell.appendChild(text);
-        for (let year in dataSet[ticker]) {
+        for (let year in jsonObj[ticker]) {
             cell = row.insertCell(1);
-            let dataNum = dataSet[ticker][year] * 100;
-            text = document.createTextNode(dataNum.toFixed(2));
+            let dataNum = jsonObj[ticker][year] * 100;
+            text = document.createTextNode(dataNum.toFixed(2) + "%");
             cell.appendChild(text);
         }
     }
