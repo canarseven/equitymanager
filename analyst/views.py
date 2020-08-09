@@ -51,7 +51,7 @@ def get_portfolio_builder(request):
             }
         gmv_portfolio["ret"] = vh.portfolio_return(weights, df_merged_returns.loc[datetime.now().year])
         gmv_portfolio["risk"] = vh.portfolio_vol(weights, cov_matrix)
-        gmv_portfolio["name"] = "GMV"
+        gmv_portfolio["name"] = "Global Minimum Variance"
         years = [year for year in range(int(period[0]), int(period[1]) + 1)]
         return JsonResponse({"all_eq": equities,
                              "years": years,
