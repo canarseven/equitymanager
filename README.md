@@ -6,12 +6,19 @@ as the API to obtain fundamental data. The three main functions of this project 
 * Portfolio Construction
 * Trading
 
-Demo: https://em.arseven.at
+Demo: http://em.arseven.at
 
 ## Updates
 
 These updates are mainly for me so I keep track of the additions to this project. Nonetheless, I publish them with this
 readme in case anyone looking at this project needs a bit more narrative to my commits 😛.
+
+> 9 August 2020 - Moving to Pandas
+> With this commit all dictionary based data structure are moving to dataframes. This allowes me to also store the
+> datetime of each price and enables easier calculations based on weekly/monthly/yearly returns. In addition a helper
+> file has been added that contains most calculations like calculating the var-cov matrix or computing weights. So,
+> in general this commit is an enhancement for the features that are working so far. Next up, more portfolios and
+> fixing the DCF calculation.
 
 > 18 July 2020 - Initial Commit
 >
