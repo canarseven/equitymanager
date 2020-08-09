@@ -6,7 +6,7 @@ as the API to obtain fundamental data. The three main functions of this project 
 * Portfolio Construction
 * Trading
 
-Demo: https://em.arseven.at
+Demo: http://em.arseven.at
 
 ## Updates
 
