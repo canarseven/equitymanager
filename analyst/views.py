@@ -32,8 +32,8 @@ def get_portfolio_builder(request):
             annual_vols.append(gather_annual_volatility(key, ticker, period))
 
         # Merge the list of returns and vols into a single dataframe with year as index and ticker as columns
-        df_merged_returns = pd.concat(annual_returns, axis=1).fillna('void')
-        df_merged_vols = pd.concat(annual_vols, axis=1).fillna('void')
+        df_merged_returns = pd.concat(annual_returns, axis=1)
+        df_merged_vols = pd.concat(annual_vols, axis=1)
 
         # Compute the var-cov matrix
         cov_matrix = compute_cov_matrix(key, tickers, period)
@@ -41,7 +41,7 @@ def get_portfolio_builder(request):
         # Convert tickers dict to list for next calculation
         tickers_list = [ticker for ticker, value in tickers.items()]
 
-        # Build the correct data structure for front end
+        # Build the GMV Portfolio
         gmv_portfolio = defaultdict(dict)
         weights = vh.gmv(cov_matrix)
         for i in range(len(weights)):
@@ -52,7 +52,9 @@ def get_portfolio_builder(request):
         gmv_portfolio["ret"] = vh.portfolio_return(weights, df_merged_returns.loc[datetime.now().year])
         gmv_portfolio["risk"] = vh.portfolio_vol(weights, cov_matrix)
         gmv_portfolio["name"] = "Global Minimum Variance"
-        years = [year for year in range(int(period[0]), int(period[1]) + 1)]
+
+        # Compute the years in a list and revers ::-1 to have the most recent year in front
+        years = [year for year in range(int(period[0]), int(period[1]) + 1)][::-1]
         return JsonResponse({"all_eq": equities,
                              "years": years,
                              "tickers": tickers,
