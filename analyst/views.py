@@ -29,8 +29,9 @@ def get_portfolio_builder(request):
         annual_returns = []
         annual_vols = []
         for ticker, value in tickers.items():
-            annual_returns.append(gather_annual_returns(key, ticker, period))
-            annual_vols.append(gather_annual_volatility(key, ticker, period))
+            daily_returns = get_daily_returns(key, ticker, period)
+            annual_returns.append(gather_annual_returns(daily_returns, trade_days_per_year))
+            annual_vols.append(gather_annual_volatility(daily_returns, trade_days_per_year))
 
         # Merge the list of returns and vols into a single dataframe with year as index and ticker as columns
         df_merged_returns = pd.concat(annual_returns, axis=1)
@@ -77,25 +78,21 @@ def compute_cov_matrix(key, tickers, period):
     return df_merged_rets.cov()
 
 
-def gather_annual_volatility(key, ticker, period):
-    trading_days_per_year = 252
-    daily_returns = get_daily_returns(key, ticker, period)
-    grouped_rets = daily_returns.groupby(daily_returns.index.year)
+def gather_annual_volatility(returns, periods):
+    grouped_rets = returns.groupby(returns.index.year)
     annualized_vol = []
     for rets in grouped_rets:
-        series = vh.annualize_vol(rets[1], trading_days_per_year)
+        series = vh.annualize_vol(rets[1], periods)
         series.name = rets[1].index.year[0]
         annualized_vol.append(series)
     return pd.DataFrame(annualized_vol)
 
 
-def gather_annual_returns(key, ticker, period):
-    trading_days_per_year = 252
-    daily_returns = get_daily_returns(key, ticker, period)
-    grouped_rets = daily_returns.groupby(daily_returns.index.year)
+def gather_annual_returns(returns, periods):
+    grouped_rets = returns.groupby(returns.index.year)
     annualized_returns = []
     for rets in grouped_rets:
-        series = vh.annualize_rets(rets[1], trading_days_per_year)
+        series = vh.annualize_rets(rets[1], periods)
         series.name = rets[1].index.year[0]
         annualized_returns.append(series)
     return pd.DataFrame(annualized_returns)
