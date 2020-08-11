@@ -24,7 +24,7 @@ def get_portfolio_builder(request):
         period = [request.POST["startPeriod"], request.POST["endPeriod"]]
         if int(period[1]) < int(period[0]):
             return render(request, "analyst/portfolio-builder.html", {"all_eq": equities})
-
+        rf = float(request.POST["rf"])
         # Compute the annual returns and vols of each ticker given a period
         annual_returns = []
         annual_vols = []
@@ -43,18 +43,12 @@ def get_portfolio_builder(request):
         # Convert tickers dict to list for next calculation
         tickers_list = [ticker for ticker, value in tickers.items()]
 
-        # Build the GMV Portfolio
-        gmv_portfolio = defaultdict(dict)
-        weights = vh.gmv(cov_matrix)
-        for i in range(len(weights)):
-            gmv_portfolio[tickers_list[i]] = {
-                "ticker": tickers_list[i],
-                "weight": weights[i]
-            }
-        gmv_portfolio["ret"] = vh.portfolio_return(weights, df_merged_returns.loc[datetime.now().year])
-        # Annualize the risk
-        gmv_portfolio["risk"] = vh.portfolio_vol(weights, cov_matrix) * (trade_days_per_year ** 0.5)
-        gmv_portfolio["name"] = "Global Minimum Variance"
+        # Build each portfolio
+        types = ["gmv", "msr", "erc"]
+        portfolios = []
+        for type in types:
+            portfolios.append(
+                build_portfolio(df_merged_returns, cov_matrix, type, trade_days_per_year, tickers_list, rf))
 
         # Compute the years in a list and revers ::-1 to have the most recent year in front
         years = [year for year in range(int(period[0]), int(period[1]) + 1)][::-1]
@@ -63,8 +57,33 @@ def get_portfolio_builder(request):
                              "tickers": tickers,
                              "annual_returns": df_merged_returns.to_json(),
                              "annual_volatility": df_merged_vols.to_json(),
-                             "portfolios": [gmv_portfolio]
+                             "portfolios": portfolios
                              })
+
+
+def build_portfolio(returns, covmat, type, periods, tickers, rf=0.0):
+    portfolio = defaultdict(dict)
+    this_year = datetime.now().year
+    returns = returns.loc[this_year].T
+    if type == "gmv":
+        weights = vh.gmv(covmat)
+        portfolio["name"] = "Global Minimum Variance"
+    elif type == "msr":
+        weights = vh.msr(rf, returns, covmat)
+        portfolio["name"] = "Maximum Sharpe Ratio"
+    elif type == "erc":
+        weights = vh.equal_risk_contributions(covmat)
+        portfolio["name"] = "Equal Risk Contribution"
+    for i in range(len(weights)):
+        portfolio[tickers[i]] = {
+            "ticker": tickers[i],
+            "weight": weights[i]
+        }
+    portfolio["ret"] = vh.portfolio_return(weights, returns)
+    # Annualize the risk
+    portfolio["risk"] = vh.portfolio_vol(weights, covmat) * (periods ** 0.5)
+
+    return portfolio
 
 
 def compute_cov_matrix(key, tickers, period):
