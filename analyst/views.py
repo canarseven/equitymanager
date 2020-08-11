@@ -14,6 +14,7 @@ import modules.viewhelper as vh
 # Create your views here.
 
 def get_portfolio_builder(request):
+    trade_days_per_year = 252
     key = os.getenv("FIN_KEY")
     equities = get_all_equities(key)
     if request.method == "GET":
@@ -50,7 +51,8 @@ def get_portfolio_builder(request):
                 "weight": weights[i]
             }
         gmv_portfolio["ret"] = vh.portfolio_return(weights, df_merged_returns.loc[datetime.now().year])
-        gmv_portfolio["risk"] = vh.portfolio_vol(weights, cov_matrix)
+        # Annualize the risk
+        gmv_portfolio["risk"] = vh.portfolio_vol(weights, cov_matrix) * (trade_days_per_year ** 0.5)
         gmv_portfolio["name"] = "Global Minimum Variance"
 
         # Compute the years in a list and revers ::-1 to have the most recent year in front
@@ -71,8 +73,7 @@ def compute_cov_matrix(key, tickers, period):
         daily_rets.append(get_daily_returns(key, ticker, period).loc[year])
 
     # Merge all daily returns on index (datetime)
-    df_merged_rets = pd.concat(daily_rets, axis=1).fillna('void')
-    # TODO: check correctness var-cov matrix
+    df_merged_rets = pd.concat(daily_rets, axis=1)
     return df_merged_rets.cov()
 
 
@@ -128,17 +129,10 @@ def get_daily_returns(key, ticker, period):
     prices = json.loads(response.text)
     cleaned_prices = [data["close"] for data in prices["historical"]]
     cleaned_dates = [data["date"] for data in prices["historical"]]
-    df_prices = pd.DataFrame(cleaned_prices, columns=["close"])
+    df_prices = pd.DataFrame(cleaned_prices, columns=[ticker])
     df_prices.index = pd.to_datetime(cleaned_dates, infer_datetime_format=True)
     df_prices = df_prices[period[1]:period[0]]
-    after_price = -1
-    df_returns = pd.DataFrame(columns=[ticker])
-    for index, price in df_prices.itertuples():
-        if after_price != -1:
-            df_returns.loc[after_index] = (after_price - price) / price
-        after_price = price
-        after_index = index
-    return df_returns
+    return df_prices[::-1].pct_change()
 
 
 def get_dcf(request):
