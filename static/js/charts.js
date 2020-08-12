@@ -7,7 +7,7 @@ function createDataSets(data) {
     let dataSets = [];
     for (let index in data.tickers) {
         let ticker = data.tickers[index];
-        let thisYear = new Date().getFullYear();
+        let thisYear = document.getElementsByName("endPeriod")[0].value;
         var vol = $.parseJSON('[' + data.annual_volatility + ']')[0];
         var ret = $.parseJSON('[' + data.annual_returns + ']')[0];
         let myData = {

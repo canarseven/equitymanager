@@ -24,35 +24,47 @@ def get_portfolio_builder(request):
     if request.method == "GET":
         return render(request, "analyst/portfolio-builder.html", {"all_eq": equities})
     else:
-        tickers = json.loads(request.POST["chosenTickers"])
-        period = [request.POST["startPeriod"], request.POST["endPeriod"]]
-        if int(period[1]) < int(period[0]):
-            return render(request, "analyst/portfolio-builder.html", {"all_eq": equities})
-        rf = float(request.POST["rf"])
+        try:
+            tickers = json.loads(request.POST["chosenTickers"])
+            period = [request.POST["startPeriod"], request.POST["endPeriod"]]
+            if int(period[1]) < int(period[0]):
+                return render(request, "analyst/portfolio-builder.html", {"all_eq": equities})
+            recent_year = period[1]
+            rf = float(request.POST["rf"])
+        except ValueError as e:
+            return render(request, "analyst/portfolio-builder.html", {"all_eq": equities, "ec": e})
         # Compute the annual returns and vols of each ticker given a period
         annual_returns = []
         annual_vols = []
-        for ticker, value in tickers.items():
+
+        # force tickers list to change its size during runtime (del elem)
+        for ticker in list(tickers):
             daily_returns = get_daily_returns(key, ticker, period)
-            annual_returns.append(gather_annual_returns(daily_returns, trade_days_per_year))
-            annual_vols.append(gather_annual_volatility(daily_returns, trade_days_per_year))
+            ticker_returns = gather_annual_returns(daily_returns, trade_days_per_year)
+            ticker_vols = gather_annual_volatility(daily_returns, trade_days_per_year)
+            if ticker_returns.empty:
+                del tickers[ticker]
+            else:
+                annual_returns.append(ticker_returns)
+                annual_vols.append(ticker_vols)
 
         # Merge the list of returns and vols into a single dataframe with year as index and ticker as columns
         df_merged_returns = pd.concat(annual_returns, axis=1)
         df_merged_vols = pd.concat(annual_vols, axis=1)
 
-        # Compute the var-cov matrix
-        cov_matrix = compute_cov_matrix(key, tickers, period)
-
         # Convert tickers dict to list for next calculation
-        tickers_list = [ticker for ticker, value in tickers.items()]
+        tickers_list = [ticker for ticker, value in tickers.items() if value != "EMPTY"]
+
+        # Compute the var-cov matrix
+        cov_matrix = compute_cov_matrix(key, tickers_list, period, recent_year)
 
         # Build each portfolio
         types = ["gmv", "msr", "erc"]
         portfolios = []
         for type in types:
             portfolios.append(
-                build_portfolio(df_merged_returns, cov_matrix, type, trade_days_per_year, tickers_list, rf))
+                build_portfolio(df_merged_returns, cov_matrix, type, trade_days_per_year, tickers_list, recent_year,
+                                rf))
 
         # Compute the years in a list and revers ::-1 to have the most recent year in front
         years = [year for year in range(int(period[0]), int(period[1]) + 1)][::-1]
@@ -65,10 +77,10 @@ def get_portfolio_builder(request):
                              })
 
 
-def build_portfolio(returns, covmat, type, periods, tickers, rf=0.0):
+def build_portfolio(returns, covmat, type, periods, tickers, calc_year, rf=0.0):
     portfolio = defaultdict(dict)
-    this_year = datetime.now().year
-    returns = returns.loc[this_year].T
+    calc_year = int(calc_year)
+    returns = returns.loc[calc_year].T
     if type == "gmv":
         weights = vh.gmv(covmat)
         portfolio["name"] = "Global Minimum Variance"
@@ -90,11 +102,11 @@ def build_portfolio(returns, covmat, type, periods, tickers, rf=0.0):
     return portfolio
 
 
-def compute_cov_matrix(key, tickers, period):
+def compute_cov_matrix(key, tickers, period, calc_year):
     daily_rets = []
     for ticker in tickers:
-        year = str(datetime.now().year)
-        daily_rets.append(get_daily_returns(key, ticker, period).loc[year])
+        calc_year = str(calc_year)
+        daily_rets.append(get_daily_returns(key, ticker, period).loc[calc_year])
 
     # Merge all daily returns on index (datetime)
     df_merged_rets = pd.concat(daily_rets, axis=1)
