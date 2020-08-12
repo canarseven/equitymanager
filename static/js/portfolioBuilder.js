@@ -1,7 +1,7 @@
 function pBuilderForm() {
     $("#pBuilderForm").submit(function (event) {
         let tbls = ["tblReturns", "tblVolats", "tblPortfolio"];
-        let headers = ["Calculated Returns", "Calculated Volatility", "Potential Portfolios"];
+        let headers = ["Calculated Returns", "Calculated Volatility", "Portfolio Weights"];
         event.preventDefault(); //prevent default action
         $("#submitBtn").prop("disabled", true);
         refreshTbls(tbls, headers);

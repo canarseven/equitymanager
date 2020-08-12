@@ -3,20 +3,24 @@ import os
 from collections import defaultdict
 
 import pandas as pd
-import requests
 from django.http import JsonResponse
 from django.shortcuts import render
 from django.utils.datetime_safe import datetime
 
+import modules.findata as fd
 import modules.viewhelper as vh
 
-
 # Create your views here.
+
+"""
+    Portfolio Builder Methods ------------------------------------------------------------------------------------------
+"""
+
 
 def get_portfolio_builder(request):
     trade_days_per_year = 252
     key = os.getenv("FIN_KEY")
-    equities = get_all_equities(key)
+    equities = fd.get_all_equities(key)
     if request.method == "GET":
         return render(request, "analyst/portfolio-builder.html", {"all_eq": equities})
     else:
@@ -117,45 +121,21 @@ def gather_annual_returns(returns, periods):
     return pd.DataFrame(annualized_returns)
 
 
-def annualize_returns(r, periods):
-    years = int(len(r) / periods)
-    average_daily_return = get_average_for_period(r, periods)
-    ans_returns = []
-    for year in range(years):
-        ans_returns.append((1 + average_daily_return[year]) ** periods - 1)
-    return ans_returns
-
-
-def get_average_for_period(r, periods):
-    yearly_chunks = chunks(r, periods)
-    average_daily_return = get_average_from_chunks(yearly_chunks)
-    return average_daily_return
-
-
-def get_average_from_chunks(my_chunks):
-    averaged_chunks = []
-    for chunk in my_chunks:
-        averaged_chunks.append(sum(chunk) / len(chunk))
-    return averaged_chunks
-
-
 def get_daily_returns(key, ticker, period):
-    response = requests.get(
-        f"https://financialmodelingprep.com/api/v3/historical-price-full/{ticker}?serietype=line&apikey={key}")
-    prices = json.loads(response.text)
-    cleaned_prices = [data["close"] for data in prices["historical"]]
-    cleaned_dates = [data["date"] for data in prices["historical"]]
-    df_prices = pd.DataFrame(cleaned_prices, columns=[ticker])
-    df_prices.index = pd.to_datetime(cleaned_dates, infer_datetime_format=True)
-    df_prices = df_prices[period[1]:period[0]]
-    return df_prices[::-1].pct_change()
+    df_prices = fd.get_daily_prices(key, ticker)[period[0]:period[1]]
+    return df_prices.pct_change()
+
+
+"""
+    DCF Calculator Methods ---------------------------------------------------------------------------------------------
+"""
 
 
 def get_dcf(request):
     dr = 10
     key = os.getenv("FIN_KEY")
     years = 0
-    equities = get_all_equities(key)
+    equities = fd.get_all_equities(key)
     if request.method == "GET":
         return render(request, "analyst/dcf-calculator.html", {"chosen_years": years,
                                                                "chosen_discount_rate": dr,
@@ -163,8 +143,14 @@ def get_dcf(request):
     else:
         # TODO: Debug DCF & PPS extreme values
         eq = request.POST["equity"]
-        dr = int(request.POST["discount_rate"])
-        years = int(request.POST["years"])
+        try:
+            dr = int(request.POST["discount_rate"])
+        except ValueError:
+            dr = 10
+        try:
+            years = int(request.POST["years"])
+        except ValueError:
+            years = 5
         discount_rate = dr / 100
         ufcf = []
         used_list = []
@@ -174,8 +160,12 @@ def get_dcf(request):
             ufcf.append(calc)
         used_list = reformat_params(used_list)
         exp_ufcf = calculate_exp_ufcf(ufcf)
+
+        # Calculate the Price Per Share (PPS)
         eq_val = calculate_dcf(key, eq, exp_ufcf, discount_rate)
-        pps = calculate_pps(key, eq, eq_val)
+        shares = fd.get_enterprise_value(key, eq)["numberOfShares"]
+        pps = eq_val / shares
+
         current_year = datetime.now().year
         past_years = [current_year - i for i in range(1, years + 1)]
         return JsonResponse({"chosen_equity": eq,
@@ -207,20 +197,6 @@ def reformat_params(used_list):
     }
 
 
-def get_all_equities(key):
-    response = requests.get(f"https://financialmodelingprep.com/api/v3/stock/list?apikey={key}")
-    data = json.loads(response.text)
-    data_list = [equity["symbol"] for equity in data]
-    return data_list
-
-
-def calculate_pps(key, ticker, equity_value):
-    response = requests.get(f"https://financialmodelingprep.com/api/v3/enterprise-values/{ticker}?apikey={key}")
-    data = json.loads(response.text)[0]
-    shares = data["numberOfShares"]
-    return equity_value / shares
-
-
 def calculate_exp_ufcf(ufcf_list):
     ufcf_rate = forecast(ufcf_list)
     expected_ufcf = []
@@ -232,14 +208,14 @@ def calculate_exp_ufcf(ufcf_list):
 
 def calculate_dcf(key, ticker, ufcf, discount_rate):
     enterprise_val = calculate_npv(ufcf, discount_rate, 0.01)
-    net_debt = get_statement(key, ticker, "balance-sheet-statement")[0]["netDebt"]
+    net_debt = fd.get_statement(key, ticker, "balance-sheet-statement")[0]["netDebt"]
     equity_val = enterprise_val - net_debt
     return equity_val
 
 
 def calculate_ufcf(key, ticker, year):
-    income = get_statement(key, ticker, "income-statement")[year]
-    cashflow = get_statement(key, ticker, "cash-flow-statement")[year]
+    income = fd.get_statement(key, ticker, "income-statement")[year]
+    cashflow = fd.get_statement(key, ticker, "cash-flow-statement")[year]
     nopat = income["netIncome"]
     working_capital = cashflow["netChangeInCash"] + cashflow["inventory"] + cashflow["accountsReceivables"] - cashflow[
         "accountsPayables"]
@@ -270,20 +246,3 @@ def calculate_npv(cashflows, rate, growth_rate=0.03):
         npv += cashflows[i] / (1 + rate) ** i
     return npv
 
-
-def get_statement(key, ticker, statement_type):
-    response = requests.get(f"https://financialmodelingprep.com/api/v3/{statement_type}/{ticker}?apikey={key}")
-    return json.loads(response.text)
-
-
-def get_company_profile(key, ticker):
-    response = requests.get(f"https://financialmodelingprep.com/api/v3/profile/{ticker}?apikey={key}")
-    return json.loads(response.text)[0]
-
-
-def chunks(lst, n):
-    """Yield successive n-sized chunks from lst."""
-    my_chunks = []
-    for i in range(0, len(lst), n):
-        my_chunks.append(lst[i:i + n])
-    return my_chunks
