@@ -7,12 +7,17 @@ import requests
 # This file contains all connections established with Financial APIs
 # If you use a different API please make the relevant changes in this file only
 
-def get_daily_prices(key, ticker):
+base_url = "https://sandbox.iexapis.com/"
+version = "stable"
+resp_format = "json"
+
+
+def get_daily_prices(key, ticker, period_range="max"):
     response = requests.get(
-        f"https://financialmodelingprep.com/api/v3/historical-price-full/{ticker}?serietype=line&apikey={key}")
+        f"{base_url}/{version}/stock/{ticker}/chart/{period_range}?token={key}")
     prices = json.loads(response.text)
-    cleaned_prices = [data["close"] for data in prices["historical"]]
-    cleaned_dates = [data["date"] for data in prices["historical"]]
+    cleaned_prices = [data["close"] for data in prices]
+    cleaned_dates = [data["date"] for data in prices]
     df_prices = pd.DataFrame(cleaned_prices, columns=[ticker])
     df_prices.index = pd.to_datetime(cleaned_dates, format="%Y-%m-%d")
     """
@@ -29,7 +34,7 @@ def get_daily_prices(key, ticker):
         > Where TICKER is the symbol of the stock
         > And the Dataframe should be ordered with Date ASCENDING ([::-1])
     """
-    return df_prices[::-1]
+    return df_prices
 
 
 def get_statement(key, ticker, statement_type):
@@ -51,7 +56,7 @@ def get_company_profile(key, ticker):
 
 
 def get_all_equities(key):
-    response = requests.get(f"https://financialmodelingprep.com/api/v3/stock/list?apikey={key}")
+    response = requests.get(f"{base_url}/beta/ref-data/symbols?token={key}")
     data = json.loads(response.text)
     data_list = [equity["symbol"] for equity in data]
     """
