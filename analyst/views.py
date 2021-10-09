@@ -237,10 +237,14 @@ def calculate_dcf(key, ticker, ufcf, discount_rate):
 
 def calculate_ufcf(key, ticker, year):
     income = fd.get_statement(key, ticker, "income-statement")[year]
+    balance = fd.get_statement(key, ticker, "balance-sheet-statement")[year]
+    balance_lastyear = fd.get_statement(key, ticker, "balance-sheet-statement")[year - 1]
     cashflow = fd.get_statement(key, ticker, "cash-flow-statement")[year]
     nopat = income["netIncome"]
-    working_capital = cashflow["netChangeInCash"] + cashflow["inventory"] + cashflow["accountsReceivables"] - cashflow[
-        "accountsPayables"]
+    working_capital = balance["totalCurrentAssets"] - balance["cashAndCashEquivalents"] - balance[
+        "totalCurrentLiabilities"]
+    working_capital_lastyear = balance_lastyear["totalCurrentAssets"] - balance_lastyear["cashAndCashEquivalents"] - \
+                               balance_lastyear["totalCurrentLiabilities"]
     capex = cashflow["capitalExpenditure"]
     ufcf = nopat + income["depreciationAndAmortization"] - capex - working_capital
     used_params = {
@@ -248,7 +252,7 @@ def calculate_ufcf(key, ticker, year):
         "nopat": nopat,
         "deprAndAmort": income["depreciationAndAmortization"],
         "capex": capex * -1,
-        "work_capital": working_capital * -1
+        "work_capital": (working_capital - working_capital_lastyear) * -1
     }
     return ufcf, used_params
 
@@ -267,4 +271,3 @@ def calculate_npv(cashflows, rate, growth_rate=0.03):
             cashflows[i] = cashflows[i] + cashflows[i] * ((1 + growth_rate) / (rate - growth_rate))
         npv += cashflows[i] / (1 + rate) ** i
     return npv
-
